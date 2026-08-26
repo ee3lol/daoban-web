@@ -87,7 +87,7 @@ export const friends = pgTable('friends', {
 export const userPreferences = pgTable('user_preferences', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
-  accentColor: text('accent_color').notNull().default('#D47A73'),
+  accentColor: text('accent_color').notNull().default('#fc535a'),
   themeStyle: text('theme_style').notNull().default('dark'), // 'dark', 'pitch_black'
   cardRadius: text('card_radius').notNull().default('rounded-xl'), // 'rounded-none', 'rounded-md', 'rounded-xl', 'rounded-full'
   filmGrain: boolean('film_grain').notNull().default(true),

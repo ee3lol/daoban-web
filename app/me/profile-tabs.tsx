@@ -64,7 +64,7 @@ export default function ProfileTabs({
 
   const currentPrefs = pendingPreferences ||
     preferences || {
-      accentColor: "#D47A73",
+      accentColor: "#fc535a",
       filmGrain: true,
       themeStyle: "dark",
     };
@@ -84,7 +84,7 @@ export default function ProfileTabs({
     } else if (preferences?.accentColor) {
       document.body.style.setProperty("--accent-red", preferences.accentColor);
     } else {
-      document.body.style.setProperty("--accent-red", "#D47A73");
+      document.body.style.setProperty("--accent-red", "#fc535a");
     }
 
     // Live preview Background Theme
@@ -616,7 +616,7 @@ export default function ProfileTabs({
                 <button
                   onClick={() => {
                     setPendingPreferences({
-                      accentColor: "#D47A73",
+                      accentColor: "#fc535a",
                       filmGrain: true,
                     });
                   }}
@@ -644,7 +644,7 @@ export default function ProfileTabs({
 
                   <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-8 items-start">
                     {[
-                      { name: "DAOBAN Default", color: "#D47A73" },
+                      { name: "DAOBAN Default", color: "#fc535a" },
                       { name: "Deep Blue", color: "#4F83CC" },
                       { name: "Emerald", color: "#509E77" },
                       { name: "Amethyst", color: "#9B72CF" },
@@ -653,7 +653,7 @@ export default function ProfileTabs({
                     ].map((theme) => {
                       const isActive =
                         (
-                          currentPrefs.accentColor || "#D47A73"
+                          currentPrefs.accentColor || "#fc535a"
                         ).toLowerCase() === theme.color.toLowerCase();
                       return (
                         <div
@@ -666,7 +666,7 @@ export default function ProfileTabs({
                               setPendingPreferences((prev) => ({
                                 ...(prev ||
                                   preferences || {
-                                    accentColor: "#D47A73",
+                                    accentColor: "#fc535a",
                                     filmGrain: true,
                                   }),
                                 accentColor: theme.color,
@@ -695,7 +695,7 @@ export default function ProfileTabs({
                         onClick={() => setShowColorPicker(true)}
                         className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 overflow-hidden ${
                           ![
-                            "#d47a73",
+                            "#fc535a",
                             "#4f83cc",
                             "#509e77",
                             "#9b72cf",
@@ -703,7 +703,7 @@ export default function ProfileTabs({
                             "#cc4f4f",
                           ].includes(
                             (
-                              currentPrefs.accentColor || "#D47A73"
+                              currentPrefs.accentColor || "#fc535a"
                             ).toLowerCase(),
                           )
                             ? "ring-2 ring-white scale-110 shadow-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]"
@@ -711,7 +711,7 @@ export default function ProfileTabs({
                         }`}
                         style={{
                           background: ![
-                            "#d47a73",
+                            "#fc535a",
                             "#4f83cc",
                             "#509e77",
                             "#9b72cf",
@@ -719,7 +719,7 @@ export default function ProfileTabs({
                             "#cc4f4f",
                           ].includes(
                             (
-                              currentPrefs.accentColor || "#D47A73"
+                              currentPrefs.accentColor || "#fc535a"
                             ).toLowerCase(),
                           )
                             ? currentPrefs.accentColor
@@ -728,14 +728,14 @@ export default function ProfileTabs({
                         title="Custom Color"
                       >
                         {![
-                          "#d47a73",
+                          "#fc535a",
                           "#4f83cc",
                           "#509e77",
                           "#9b72cf",
                           "#d4a373",
                           "#cc4f4f",
                         ].includes(
-                          (currentPrefs.accentColor || "#D47A73").toLowerCase(),
+                          (currentPrefs.accentColor || "#fc535a").toLowerCase(),
                         ) ? (
                           <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm pointer-events-none" />
                         ) : (
@@ -747,7 +747,7 @@ export default function ProfileTabs({
                       <span
                         className={`text-[9px] font-bold tracking-wider text-center uppercase leading-tight transition-colors ${
                           ![
-                            "#d47a73",
+                            "#fc535a",
                             "#4f83cc",
                             "#509e77",
                             "#9b72cf",
@@ -755,7 +755,7 @@ export default function ProfileTabs({
                             "#cc4f4f",
                           ].includes(
                             (
-                              currentPrefs.accentColor || "#D47A73"
+                              currentPrefs.accentColor || "#fc535a"
                             ).toLowerCase(),
                           )
                             ? "text-white"
@@ -774,12 +774,12 @@ export default function ProfileTabs({
                           />
                           <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-background-elevated p-3 rounded-2xl border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                             <HexColorPicker
-                              color={currentPrefs.accentColor || "#D47A73"}
+                              color={currentPrefs.accentColor || "#fc535a"}
                               onChange={(color) => {
                                 setPendingPreferences((prev) => ({
                                   ...(prev ||
                                     preferences || {
-                                      accentColor: "#D47A73",
+                                      accentColor: "#fc535a",
                                       filmGrain: true,
                                       themeStyle: "dark",
                                     }),
@@ -793,7 +793,7 @@ export default function ProfileTabs({
                               </span>
                               <span className="text-white text-[12px] font-mono tracking-wider">
                                 {(
-                                  currentPrefs.accentColor || "#D47A73"
+                                  currentPrefs.accentColor || "#fc535a"
                                 ).toUpperCase()}
                               </span>
                             </div>
@@ -849,7 +849,7 @@ export default function ProfileTabs({
                             setPendingPreferences((prev) => ({
                               ...(prev ||
                                 preferences || {
-                                  accentColor: "#D47A73",
+                                  accentColor: "#fc535a",
                                   filmGrain: true,
                                   themeStyle: "dark",
                                 }),
@@ -927,7 +927,7 @@ export default function ProfileTabs({
                         setPendingPreferences((prev) => ({
                           ...(prev ||
                             preferences || {
-                              accentColor: "#D47A73",
+                              accentColor: "#fc535a",
                               filmGrain: true,
                             }),
                           filmGrain: !currentPrefs.filmGrain,
@@ -1080,7 +1080,7 @@ export default function ProfileTabs({
                       preferences.accentColor,
                     );
                   } else {
-                    document.body.style.setProperty("--accent-red", "#D47A73");
+                    document.body.style.setProperty("--accent-red", "#fc535a");
                   }
                 }}
                 disabled={isSavingAppearance}

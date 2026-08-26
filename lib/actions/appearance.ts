@@ -25,7 +25,7 @@ export async function getUserPreferences() {
   if (prefs.length === 0) {
     // Return defaults if no preferences exist
     return {
-      accentColor: '#D47A73',
+      accentColor: '#fc535a',
       themeStyle: 'dark',
       cardRadius: 'rounded-xl',
       filmGrain: true,
@@ -60,7 +60,7 @@ export async function updateUserPreferences(data: {
       await db.insert(userPreferences).values({
         id: crypto.randomUUID(),
         userId: session.user.id,
-        accentColor: data.accentColor ?? '#D47A73',
+        accentColor: data.accentColor ?? '#fc535a',
         themeStyle: data.themeStyle ?? 'dark',
         cardRadius: data.cardRadius ?? 'rounded-xl',
         filmGrain: data.filmGrain ?? true,

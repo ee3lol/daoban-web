@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = session?.user ?? null;
   const prefs = await getUserPreferences();
   
-  const accentColor = prefs?.accentColor ?? '#D47A73';
+  const accentColor = prefs?.accentColor ?? '#fc535a';
   const showFilmGrain = prefs?.filmGrain ?? true;
   const themeStyle = prefs?.themeStyle ?? 'dark';
 

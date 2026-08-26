@@ -61,11 +61,11 @@ export const auth = betterAuth({
                           <div style="margin-top: -30px; position: relative; z-index: 10; display: inline-flex; align-items: center; justify-content: center; gap: 12px; background: #111111; padding: 10px 20px; border-radius: 12px;">
                             <span style="color: #EAE8E3; font-weight: 600; font-size: 20px; letter-spacing: 0.15em; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">DAOBAN</span>
                             <span style="color: rgba(136,136,136,0.3); font-size: 16px;">|</span>
-                            <span style="color: #D47A73; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
+                            <span style="color: #fc535a; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
                           </div>
                           
                           <p style="color: #EAE8E3; font-size: 16px; line-height: 1.6; margin-top: 40px; text-align: center; font-weight: 500;">
-                            Ahoy, <span style="color: #D47A73;">${user.name || user.email}</span>
+                            Ahoy, <span style="color: #fc535a;">${user.name || user.email}</span>
                           </p>
                           
                           <p style="color: #888888; font-size: 15px; line-height: 1.6; margin-top: 15px; text-align: center;">
@@ -74,7 +74,7 @@ export const auth = betterAuth({
                           
                           <!-- Action Button -->
                           <div style="text-align: center; margin: 40px 0;">
-                            <a href="${url}" style="background-color: #D47A73; color: #F9F8F6; padding: 16px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; display: inline-block; text-transform: uppercase;">
+                            <a href="${url}" style="background-color: #fc535a; color: #F9F8F6; padding: 16px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; display: inline-block; text-transform: uppercase;">
                               Reset Password
                             </a>
                           </div>
@@ -84,7 +84,7 @@ export const auth = betterAuth({
                             <p style="font-size: 11px; color: #666666; text-align: center; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.1em;">
                               Or paste this link into your browser:
                             </p>
-                            <p style="font-size: 12px; color: #D47A73; word-break: break-all; text-align: center; margin: 0; line-height: 1.5; opacity: 0.8;">
+                            <p style="font-size: 12px; color: #fc535a; word-break: break-all; text-align: center; margin: 0; line-height: 1.5; opacity: 0.8;">
                               ${url}
                             </p>
                           </div>
@@ -151,11 +151,11 @@ export const auth = betterAuth({
                           <div style="margin-top: -30px; position: relative; z-index: 10; display: inline-flex; align-items: center; justify-content: center; gap: 12px; background: #111111; padding: 10px 20px; border-radius: 12px;">
                             <span style="color: #EAE8E3; font-weight: 600; font-size: 20px; letter-spacing: 0.15em; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">DAOBAN</span>
                             <span style="color: rgba(136,136,136,0.3); font-size: 16px;">|</span>
-                            <span style="color: #D47A73; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
+                            <span style="color: #fc535a; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
                           </div>
                           
                           <p style="color: #EAE8E3; font-size: 16px; line-height: 1.6; margin-top: 40px; text-align: center; font-weight: 500;">
-                            Welcome aboard, <span style="color: #D47A73;">${user.name || user.email}</span>
+                            Welcome aboard, <span style="color: #fc535a;">${user.name || user.email}</span>
                           </p>
                           
                           <p style="color: #888888; font-size: 15px; line-height: 1.6; margin-top: 15px; text-align: center;">
@@ -164,7 +164,7 @@ export const auth = betterAuth({
                           
                           <!-- Action Button -->
                           <div style="text-align: center; margin: 40px 0;">
-                            <a href="${url}" style="background-color: #D47A73; color: #F9F8F6; padding: 16px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; display: inline-block; text-transform: uppercase;">
+                            <a href="${url}" style="background-color: #fc535a; color: #F9F8F6; padding: 16px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; display: inline-block; text-transform: uppercase;">
                               Verify Account
                             </a>
                           </div>
@@ -174,7 +174,7 @@ export const auth = betterAuth({
                             <p style="font-size: 11px; color: #666666; text-align: center; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.1em;">
                               Or paste this link into your browser:
                             </p>
-                            <p style="font-size: 12px; color: #D47A73; word-break: break-all; text-align: center; margin: 0; line-height: 1.5; opacity: 0.8;">
+                            <p style="font-size: 12px; color: #fc535a; word-break: break-all; text-align: center; margin: 0; line-height: 1.5; opacity: 0.8;">
                               ${url}
                             </p>
                           </div>

@@ -104,11 +104,11 @@ export async function requestPasswordOTP() {
                       <div style="margin-top: -30px; position: relative; z-index: 10; display: inline-flex; align-items: center; justify-content: center; gap: 12px; background: #111111; padding: 10px 20px; border-radius: 12px;">
                         <span style="color: #EAE8E3; font-weight: 600; font-size: 20px; letter-spacing: 0.15em; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">DAOBAN</span>
                         <span style="color: rgba(136,136,136,0.3); font-size: 16px;">|</span>
-                        <span style="color: #D47A73; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
+                        <span style="color: #fc535a; font-size: 18px; font-weight: 500; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">盗版</span>
                       </div>
                       
                       <p style="color: #EAE8E3; font-size: 16px; line-height: 1.6; margin-top: 40px; text-align: center; font-weight: 500;">
-                        Ahoy, <span style="color: #D47A73;">${session.user.name || session.user.email}</span>
+                        Ahoy, <span style="color: #fc535a;">${session.user.name || session.user.email}</span>
                       </p>
                       
                       <p style="color: #888888; font-size: 15px; line-height: 1.6; margin-top: 15px; text-align: center;">
