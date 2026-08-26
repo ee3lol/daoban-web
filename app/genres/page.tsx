@@ -14,13 +14,13 @@ export default async function GenresPage({
   const genres = data?.genres || [];
 
   return (
-    <main className="flex-1 flex flex-col min-h-screen relative bg-[#151515] pt-32 px-6 md:px-12 max-w-7xl mx-auto w-full">
+    <main className="flex-1 flex flex-col min-h-screen relative bg-background-light pt-32 px-6 md:px-12 max-w-7xl mx-auto w-full">
       
       <div className="mb-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#EAE8E3] tracking-tight mb-4">
           Browse by Genre
         </h1>
-        <div className="w-24 h-1 bg-[#D47A73] rounded-full" />
+        <div className="w-24 h-1 bg-accent rounded-full" />
       </div>
 
       <GenreTabs currentTab={currentTab} />
@@ -36,7 +36,7 @@ export default async function GenresPage({
             <div className="absolute inset-0 bg-gradient-to-br from-[#151515] to-[#222222] opacity-80 group-hover:opacity-40 transition-opacity duration-300" />
             
             {/* Hover Glow */}
-            <div className="absolute inset-0 bg-[#D47A73]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+            <div className="absolute inset-0 bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
             
             <h2 className="relative z-10 text-[#EAE8E3] font-bold text-lg md:text-xl tracking-widest uppercase group-hover:text-white transition-colors">
               {genre.name}

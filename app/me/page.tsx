@@ -1,4 +1,5 @@
 import { getUserSessions, getConnectedAccounts, getWatchLater, getFavorites } from '@/lib/actions/user';
+import { getUserPreferences } from '@/lib/actions/appearance';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -19,15 +20,17 @@ export default async function ProfilePage() {
   const connectedAccounts = await getConnectedAccounts();
   const watchLater = await getWatchLater();
   const favorites = await getFavorites();
+  const preferences = await getUserPreferences();
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[#050505] text-[#EAE8E3] font-sans flex">
+    <main className="h-screen w-screen overflow-hidden bg-background text-[#EAE8E3] font-sans flex">
       <ProfileTabs
         user={user}
         sessionData={sessionData}
         connectedAccounts={connectedAccounts}
         watchLater={watchLater}
         favorites={favorites}
+        preferences={preferences}
       />
     </main>
   );

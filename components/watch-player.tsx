@@ -37,7 +37,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
   const validSeasons = item.seasons?.filter((s: any) => s.season_number > 0) || [];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#050505] z-50 p-2 md:p-6 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-background z-50 p-2 md:p-6 flex items-center justify-center overflow-hidden">
       <div className="relative w-full h-full bg-black rounded-xl md:rounded-[24px] border border-white/5 overflow-hidden shadow-2xl flex flex-col">
         {/* Back Button */}
         <button 
@@ -95,7 +95,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                   onClick={() => setSelectedSeason(season.season_number)}
                   className={`shrink-0 px-4 py-2 rounded-lg font-bold tracking-widest text-[10px] uppercase transition-all ${
                     selectedSeason === season.season_number
-                      ? 'bg-[#D47A73] text-[#151515] shadow-[0_0_15px_rgba(212,122,115,0.2)]'
+                      ? 'bg-accent text-[#151515] shadow-[0_0_15px_rgba(212,122,115,0.2)]'
                       : 'bg-white/5 text-[#888888] hover:bg-white/10 hover:text-[#EAE8E3]'
                   }`}
                 >
@@ -108,7 +108,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
               {isLoading ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-[#D47A73] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : seasonData?.episodes?.length > 0 ? (
                 seasonData.episodes.map((ep: any) => {
@@ -142,7 +142,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                         {/* Play Overlay */}
                         <div className={`absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                           {isPlaying ? (
-                            <div className="text-[10px] font-bold tracking-widest text-[#D47A73] uppercase bg-black/60 px-2 py-1 rounded">Playing</div>
+                            <div className="text-[10px] font-bold tracking-widest text-accent uppercase bg-black/60 px-2 py-1 rounded">Playing</div>
                           ) : (
                             <ListVideo className="w-6 h-6 text-white" />
                           )}
@@ -152,7 +152,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                       {/* Info */}
                       <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 py-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-black ${isPlaying ? 'text-[#D47A73]' : 'text-white/40'}`}>
+                          <span className={`text-xs font-black ${isPlaying ? 'text-accent' : 'text-white/40'}`}>
                             {ep.episode_number}.
                           </span>
                           <span className={`text-sm font-bold truncate ${isPlaying ? 'text-white' : 'text-white/80 group-hover:text-white'}`}>

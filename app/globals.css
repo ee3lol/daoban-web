@@ -1,23 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #151515; /* Soft Charcoal */
-  --foreground: #EAE8E3; /* Soft Off-White */
+  /* Default Charcoal Theme */
+  --bg-base: #050505;
+  --bg-elevated: #0a0a0a;
+  --bg-light: #151515;
+
+  --background: var(--bg-base);
+  --foreground: #EAE8E3;
   
   --muted: #888888;
   --disabled: #555555;
 
-  --accent-red: #D47A73; /* Calm Terracotta / Dusty Rose */
+  --accent-red: #D47A73;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg-base);
+  --color-background-elevated: var(--bg-elevated);
+  --color-background-light: var(--bg-light);
   --color-foreground: var(--foreground);
   
   --color-muted: var(--muted);
   --color-disabled: var(--disabled);
 
   --color-accent: var(--accent-red);
+  --color-accent-foreground: var(--accent-foreground);
 }
 
 body {
@@ -56,4 +64,13 @@ body {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(-50%, 0); }
+  20%, 60% { transform: translate(calc(-50% - 10px), 0); }
+  40%, 80% { transform: translate(calc(-50% + 10px), 0); }
+}
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }

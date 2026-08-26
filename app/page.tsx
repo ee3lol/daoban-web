@@ -41,7 +41,7 @@ export default async function Home() {
   const trendingRightNow = trendingRightNowData?.results?.slice(0, 10) || [];
 
   return (
-    <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-[#151515]">
+    <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-background-light">
       
       {/* Hero Section */}
       <HeroCarousel movies={top10} />

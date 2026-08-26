@@ -24,7 +24,7 @@ function Column({ title, items }: ColumnProps) {
   return (
     <div className="flex flex-col">
       <h2 className="text-[#EAE8E3] text-[13px] md:text-[14px] font-bold tracking-[0.2em] uppercase mb-6 flex items-center gap-3">
-        <span className="w-[3px] h-[14px] bg-[#D47A73] rounded-full"></span>
+        <span className="w-[3px] h-[14px] bg-accent rounded-full"></span>
         {title}
       </h2>
       <div className="flex flex-col">
@@ -48,13 +48,13 @@ function Column({ title, items }: ColumnProps) {
                 />
               </div>
               <div className="flex flex-col flex-1 min-w-0 justify-center gap-1.5">
-                <h3 className="text-[#EAE8E3] text-[13px] font-semibold truncate group-hover:text-[#D47A73] transition-colors leading-tight">
+                <h3 className="text-[#EAE8E3] text-[13px] font-semibold truncate group-hover:text-accent transition-colors leading-tight">
                   {displayTitle}
                 </h3>
                 <div className="flex items-center gap-3 text-[10px] text-[#888888] font-medium tracking-wider">
                   {rating && (
                     <span className="flex items-center gap-1 text-[#EAE8E3]">
-                      <Star className="w-[10px] h-[10px] text-[#D47A73] fill-[#D47A73]" />
+                      <Star className="w-[10px] h-[10px] text-accent fill-accent" />
                       {rating}
                     </span>
                   )}

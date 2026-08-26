@@ -122,9 +122,30 @@ export async function getUserSessions() {
   const currentSession = await auth.api.getSession({ headers: await headers() });
   const allSessions = await db.select().from(sessionTable).where(eq(sessionTable.userId, user.id));
   
+  const enrichedSessions = await Promise.all(allSessions.map(async (session) => {
+    let location = 'Unknown Location';
+    if (session.ipAddress) {
+      if (session.ipAddress === '::1' || session.ipAddress === '127.0.0.1' || session.ipAddress.includes('0000:0000:0000:0000:0000:0000:0000:0000')) {
+        location = 'Local Machine';
+      } else {
+        try {
+          // Use ip-api for free IP geolocation
+          const res = await fetch(`http://ip-api.com/json/${session.ipAddress}`);
+          const data = await res.json();
+          if (data.status === 'success') {
+            location = `${data.city}, ${data.countryCode}`;
+          }
+        } catch (e) {
+          // Fallback to unknown if API fails
+        }
+      }
+    }
+    return { ...session, location };
+  }));
+  
   return {
     currentSessionId: currentSession?.session?.id || null,
-    sessions: allSessions
+    sessions: enrichedSessions
   };
 }
 

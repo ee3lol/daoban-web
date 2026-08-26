@@ -54,7 +54,7 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
       {/* Minimalist Glass Ribbon */}
       {rank !== undefined && rank <= 10 && (
         <div className="absolute top-0 left-3 z-30 w-7 h-9 bg-black/40 backdrop-blur-md border border-white/10 border-t-0 flex items-end justify-center pb-1.5 shadow-md pointer-events-none rounded-b-[6px]">
-          <span className="font-bold text-[13px] text-[#D47A73] leading-none">{rank}</span>
+          <span className="font-bold text-[13px] text-accent leading-none">{rank}</span>
         </div>
       )}
 
@@ -69,8 +69,8 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
             <span className="text-[#888888] group-hover:text-[#EAE8E3] transition-colors text-[10px] sm:text-[11px] font-semibold tracking-wider">{year}</span>
             {rating && rating !== '0.0' && (
               <div className="flex items-center gap-1 sm:gap-1.5">
-                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[#D47A73] text-[#D47A73]" />
-                <span className="text-[#D47A73] font-bold text-[10px] sm:text-[11px] drop-shadow-md">{rating}</span>
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-accent text-accent" />
+                <span className="text-accent font-bold text-[10px] sm:text-[11px] drop-shadow-md">{rating}</span>
               </div>
             )}
           </div>

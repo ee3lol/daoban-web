@@ -31,7 +31,7 @@ export default function PlatformSection({ platformData }: PlatformSectionProps) 
           {activeTab === tab && (
             <motion.span 
               layoutId="platform-underline"
-              className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-[#D47A73]" 
+              className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-accent" 
             />
           )}
         </button>

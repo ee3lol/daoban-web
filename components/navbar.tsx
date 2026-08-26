@@ -63,7 +63,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         <Link href="/" className="flex items-center gap-3 pointer-events-auto">
           <span className="text-[#EAE8E3] font-semibold text-[16px] tracking-[0.15em] drop-shadow-md">DAOBAN</span>
           <span className="text-[#888888]/40 text-xs">|</span>
-          <span className="text-[#D47A73] text-[13px] font-medium drop-shadow-md">盗版</span>
+          <span className="text-accent text-[13px] font-medium drop-shadow-md">盗版</span>
         </Link>
       </div>
 
@@ -84,7 +84,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
                 key={item.label} 
                 href={item.href} 
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-[12px] font-medium tracking-[0.2em] transition-colors py-2 w-full text-center ${isActive ? 'text-[#D47A73]' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
+                className={`text-[12px] font-medium tracking-[0.2em] transition-colors py-2 w-full text-center ${isActive ? 'text-accent' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
               >
                 {item.label}
               </Link>
@@ -93,7 +93,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </div>
 
         <nav className="w-full flex items-center justify-around py-4 rounded-[24px]" style={glassStyle}>
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-1.5 text-[#D47A73]">
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col items-center gap-1.5 text-accent">
             <Home className="w-[22px] h-[22px]" strokeWidth={2} />
             <span className="text-[9px] font-bold tracking-widest">HOME</span>
           </Link>
@@ -126,10 +126,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
           >
             {isNavigatingToMe ? (
               <div className="w-[26px] h-[26px] flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-[#D47A73] border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : user?.image ? (
-              <div className="w-[26px] h-[26px] rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 ring-2 ring-transparent group-hover:ring-[#D47A73]/50 group-hover:shadow-[0_0_10px_rgba(212,122,115,0.3)]">
+              <div className="w-[26px] h-[26px] rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 ring-2 ring-transparent group-hover:ring-accent/50 group-hover:shadow-[0_0_10px_rgba(212,122,115,0.3)]">
                 <img src={user.image} alt="avatar" className="w-full h-full object-cover scale-[1.15]" />
               </div>
             ) : (
@@ -163,7 +163,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
           >
             <span className="text-[#EAE8E3] font-semibold text-lg tracking-[0.15em] transition-colors">DAOBAN</span>
             <span className="text-[#888888]/30 text-sm">|</span>
-            <span className="text-[#D47A73] text-[15px] font-medium transition-colors">盗版</span>
+            <span className="text-accent text-[15px] font-medium transition-colors">盗版</span>
 
             {/* Desktop Tooltip (Meaning of Name / About Us) */}
             <div className="absolute top-full mt-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-[500ms] pointer-events-none z-50 translate-y-2 group-hover:translate-y-0">
@@ -176,11 +176,11 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
 
               <div className="bg-[rgba(21,21,21,0.95)] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-5 rounded-[16px] w-[280px] flex flex-col gap-2 relative overflow-hidden mt-0">
                 {/* Subtle top highlight */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D47A73]/30 to-transparent" />
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
                 
                 <div className="flex items-center gap-2">
                   <span className="text-[#EAE8E3] text-[13px] font-bold tracking-widest uppercase">DAOBAN</span>
-                  <span className="text-[#D47A73] text-[13px] font-medium tracking-widest">盗版</span>
+                  <span className="text-accent text-[13px] font-medium tracking-widest">盗版</span>
                 </div>
                 <p className="text-[#888888]/70 text-[10px] uppercase tracking-widest font-semibold border-b border-[#888888]/10 pb-3 mb-1">
                   Means &quot;Pirated&quot; / &quot;Bootleg&quot;
@@ -206,7 +206,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
                   {isActive && (
                     <motion.span 
                       layoutId="navbar-underline"
-                      className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-[#D47A73]" 
+                      className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-accent" 
                     />
                   )}
                 </Link>
@@ -218,7 +218,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
           <div className="flex items-center gap-5">
             <button 
               onClick={() => setIsSearchOpen(true)}
-              className="text-[#888888] hover:text-[#D47A73] transition-colors duration-300 transform hover:scale-110"
+              className="text-[#888888] hover:text-accent transition-colors duration-300 transform hover:scale-110"
             >
               <Search className="w-[20px] h-[20px]" strokeWidth={2} />
             </button>
@@ -236,10 +236,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             >
               {isNavigatingToMe ? (
                 <div className="w-[30px] h-[30px] flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-[#D47A73] border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : user?.image ? (
-                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 ring-2 ring-transparent group-hover:ring-[#D47A73]/50 group-hover:shadow-[0_0_15px_rgba(212,122,115,0.3)] group-hover:scale-110">
+                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 ring-2 ring-transparent group-hover:ring-accent/50 group-hover:shadow-[0_0_15px_rgba(212,122,115,0.3)] group-hover:scale-110">
                   <img src={user.image} alt="avatar" className="w-full h-full object-cover scale-[1.15]" />
                 </div>
               ) : (

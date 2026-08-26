@@ -14,7 +14,7 @@ export default async function AnimePage() {
   const airing = airingData?.results || [];
 
   return (
-    <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-[#151515]">
+    <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-background-light">
       
       {/* Hero Carousel (using top rated anime as a proxy for trending anime) */}
       <HeroCarousel movies={topRated} />

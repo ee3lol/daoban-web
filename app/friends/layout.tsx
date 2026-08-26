@@ -14,7 +14,7 @@ export default function FriendsLayout({ children }: { children: ReactNode }) {
             href="/friends"
             className="flex items-center gap-3 px-4 py-3 rounded-[14px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] text-[#EAE8E3] font-medium hover:bg-[rgba(255,255,255,0.06)] transition-all flex-shrink-0"
           >
-            <Users className="w-5 h-5 text-[#D47A73]" />
+            <Users className="w-5 h-5 text-accent" />
             <span className="text-sm tracking-wide">All Friends</span>
           </Link>
           
@@ -28,7 +28,7 @@ export default function FriendsLayout({ children }: { children: ReactNode }) {
           
           <Link 
             href="/friends?tab=add"
-            className="flex items-center gap-3 px-4 py-3 rounded-[14px] bg-[rgba(212,122,115,0.1)] border border-[rgba(212,122,115,0.2)] text-[#D47A73] font-medium hover:bg-[rgba(212,122,115,0.15)] transition-all flex-shrink-0 mt-0 md:mt-4"
+            className="flex items-center gap-3 px-4 py-3 rounded-[14px] bg-[rgba(212,122,115,0.1)] border border-[rgba(212,122,115,0.2)] text-accent font-medium hover:bg-[rgba(212,122,115,0.15)] transition-all flex-shrink-0 mt-0 md:mt-4"
           >
             <UserPlus className="w-5 h-5" />
             <span className="text-sm tracking-wide">Add Friend</span>
