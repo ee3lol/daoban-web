@@ -1091,7 +1091,7 @@ export default function ProfileTabs({
                   }
                 }}
                 disabled={isSavingAppearance}
-                className="flex-none px-5 py-2 bg-accent hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] text-accent-foreground rounded-lg font-semibold text-[12px] sm:text-[13px] transition-opacity flex items-center justify-center min-w-[90px]"
+                className="flex-none px-5 py-2 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[12px] sm:text-[13px] transition-opacity flex items-center justify-center min-w-[90px]"
               >
                 {isSavingAppearance ? (
                   <div className="w-3.5 h-3.5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />

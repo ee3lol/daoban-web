@@ -13,6 +13,7 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  trustedOrigins: ["https://daoban.lol", "https://www.daoban.lol", "http://localhost:3000"],
   user: {
     additionalFields: {
       hasSetUsername: {
