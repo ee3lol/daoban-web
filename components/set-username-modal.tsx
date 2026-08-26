@@ -110,7 +110,7 @@ export default function SetUsernameModal({ user }: { user: any }) {
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="mt-2 px-6 py-3.5 bg-accent text-[#F9F8F6] rounded-[14px] font-semibold w-full hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] transition-all duration-300 disabled:opacity-50 tracking-wide "
+            className="mt-2 px-6 py-3.5 bg-accent text-[#F9F8F6] rounded-[14px] font-semibold w-full hover:brightness-110 transition-all duration-300 disabled:opacity-50 tracking-wide "
           >
             {loading ? "Saving..." : "Save & Continue"}
           </button>

@@ -117,7 +117,7 @@ export default function FriendsManager({
             <button
               type="submit"
               disabled={loading || !searchUsername.trim()}
-              className="bg-accent text-accent-foreground py-3.5 rounded-[12px] font-bold tracking-widest uppercase text-xs hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] transition-colors disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+              className="bg-accent text-accent-foreground py-3.5 rounded-[12px] font-bold tracking-widest uppercase text-xs hover:brightness-110 transition-colors disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
             >
               {loading ? (
                 "Sending..."

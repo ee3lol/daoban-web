@@ -218,9 +218,13 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
           <div className="flex items-center gap-5">
             <button 
               onClick={() => setIsSearchOpen(true)}
-              className="text-[#888888] hover:text-accent transition-colors duration-300 transform hover:scale-110"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-[#888888] hover:text-[#EAE8E3] group"
             >
-              <Search className="w-[20px] h-[20px]" strokeWidth={2} />
+              <Search className="w-[16px] h-[16px] group-hover:scale-110 group-hover:text-accent transition-all" strokeWidth={2.5} />
+              <div className="flex items-center gap-1 opacity-60">
+                <span className="text-[9px] font-bold tracking-widest uppercase border border-white/10 px-1.5 py-0.5 rounded-sm bg-black/40">CTRL</span>
+                <span className="text-[9px] font-bold tracking-widest uppercase border border-white/10 px-1.5 py-0.5 rounded-sm bg-black/40">K</span>
+              </div>
             </button>
             <button 
               disabled={isNavigatingToMe}

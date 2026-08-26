@@ -13,6 +13,7 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<"google" | "discord" | null>(null);
@@ -41,7 +42,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const formData = new FormData(e.currentTarget);
 
     try {
-      if (isLogin) {
+      if (isForgotPassword) {
+        const { error } = await authClient.requestPasswordReset({
+          email: formData.get("email") as string,
+          redirectTo: "/reset-password",
+        });
+        if (error) {
+          setError(error.message || "Failed to send reset link");
+        } else {
+          setSuccessMsg("Reset link sent! Check your email.");
+          setTimeout(() => {
+            setIsForgotPassword(false);
+            setSuccessMsg(null);
+          }, 3000);
+        }
+      } else if (isLogin) {
         const { error } = await authClient.signIn.email({
           email: formData.get("email") as string,
           password: formData.get("password") as string,
@@ -133,14 +148,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <div className="flex flex-col gap-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-ivory tracking-widest uppercase mb-1">
-              {isLogin ? "Welcome Back" : "Create Account"}
+              {isForgotPassword ? "Reset Password" : isLogin ? "Welcome Back" : "Create Account"}
             </h2>
             <p className="text-[#888888] text-[11px] font-medium tracking-widest uppercase">
-              {isLogin ? "Sign in to continue" : "Join the community"}
+              {isForgotPassword ? "Enter your email" : isLogin ? "Sign in to continue" : "Join the community"}
             </p>
           </div>
 
-          {/* Sliding Toggle */}
+          {!isForgotPassword && (
+            <>
+              {/* Sliding Toggle */}
           <div className="relative flex w-full p-1 bg-[rgba(255,255,255,0.02)] rounded-[16px] border border-[rgba(255,255,255,0.04)] shadow-inner">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-[12px] bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.04)] shadow-sm transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -249,10 +266,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {successMsg}
             </div>
           )}
+          </>
+          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Username (only on Register) */}
-            {!isLogin && (
+            {!isLogin && !isForgotPassword && (
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-bold text-[#888888] uppercase tracking-[0.2em] ml-1">
                   Username
@@ -280,31 +299,48 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               />
             </div>
 
-            <div className="flex flex-col gap-2 relative">
-              <label className="text-[10px] font-bold text-[#888888] uppercase tracking-[0.2em] ml-1">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  className="w-full bg-[rgba(255,255,255,0.025)] border border-[rgba(255,255,255,0.06)] rounded-[12px] px-4 py-3.5 pr-12 text-[#EAE8E3] text-sm placeholder:text-[#888888]/50 focus:outline-none focus:bg-[rgba(255,255,255,0.04)] focus:border-accent/50 focus:shadow-[0_0_0_1px_rgba(212,122,115,0.2)] transition-all"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#EAE8E3] transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff size={18} strokeWidth={1.5} />
-                  ) : (
-                    <Eye size={18} strokeWidth={1.5} />
+            {!isForgotPassword && (
+              <div className="flex flex-col gap-2 relative">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-bold text-[#888888] uppercase tracking-[0.2em]">
+                    Password
+                  </label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setError(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-[10px] font-bold text-accent uppercase tracking-[0.1em] hover:brightness-110 transition-colors"
+                    >
+                      Forgot?
+                    </button>
                   )}
-                </button>
+                </div>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="w-full bg-[rgba(255,255,255,0.025)] border border-[rgba(255,255,255,0.06)] rounded-[12px] px-4 py-3.5 pr-12 text-[#EAE8E3] text-sm placeholder:text-[#888888]/50 focus:outline-none focus:bg-[rgba(255,255,255,0.04)] focus:border-accent/50 focus:shadow-[0_0_0_1px_rgba(212,122,115,0.2)] transition-all"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#EAE8E3] transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} strokeWidth={1.5} />
+                    ) : (
+                      <Eye size={18} strokeWidth={1.5} />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
@@ -312,8 +348,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               className="mt-4 px-6 py-3.5 bg-accent text-[#F9F8F6] rounded-[14px] font-semibold w-full hover:brightness-110 transition-all duration-300 disabled:opacity-50 tracking-wide flex items-center justify-center gap-2"
             >
               {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {isLogin ? "Sign In" : "Register"}
+              {isForgotPassword ? "Send Link" : isLogin ? "Sign In" : "Register"}
             </button>
+            
+            {isForgotPassword && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className="mt-2 text-[#888888] hover:text-[#EAE8E3] text-xs font-semibold uppercase tracking-widest transition-colors"
+              >
+                Back to Sign In
+              </button>
+            )}
           </form>
         </div>
       </div>

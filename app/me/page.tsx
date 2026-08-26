@@ -23,7 +23,7 @@ export default async function ProfilePage() {
   const preferences = await getUserPreferences();
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-background text-[#EAE8E3] font-sans flex">
+    <main className="h-screen w-screen overflow-hidden bg-background-light text-[#EAE8E3] font-sans flex">
       <ProfileTabs
         user={user}
         sessionData={sessionData}

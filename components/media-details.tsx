@@ -40,6 +40,8 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const [mounted, setMounted] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const overviewRef = useRef<HTMLParagraphElement>(null);
   const { data: session } = authClient.useSession();
 
   const validSeasons =
@@ -54,10 +56,34 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const [isWatchLater, setIsWatchLater] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
+  const [isTitleExpanded, setIsTitleExpanded] = useState(false);
+  
+  const [showTitleToggle, setShowTitleToggle] = useState(false);
+  const [showOverviewToggle, setShowOverviewToggle] = useState(false);
 
   const [isVideoReady, setIsVideoReady] = useState(false);
 
   const title = item?.title || item?.name;
+
+  useEffect(() => {
+    const checkTruncation = () => {
+      if (titleRef.current && !isTitleExpanded) {
+        setShowTitleToggle(titleRef.current.scrollHeight > titleRef.current.clientHeight);
+      }
+      if (overviewRef.current && !isOverviewExpanded) {
+        setShowOverviewToggle(overviewRef.current.scrollHeight > overviewRef.current.clientHeight);
+      }
+    };
+
+    // Small delay to ensure styles and fonts are applied
+    const timeoutId = setTimeout(checkTruncation, 100);
+    window.addEventListener("resize", checkTruncation);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", checkTruncation);
+    };
+  }, [title, item?.overview, isTitleExpanded, isOverviewExpanded]);
   const trailer = item?.videos?.results?.find(
     (v: any) => v.type === "Trailer" && v.site === "YouTube",
   );
@@ -150,7 +176,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const similar = item.similar?.results?.slice(0, 10) || [];
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background-light pb-20">
       {/* Advanced Cinematic Hero Section */}
       <div className="relative w-full h-[85vh] min-h-[600px] max-h-[900px] flex items-end overflow-hidden">
         {/* Background Layer */}
@@ -183,6 +209,15 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/20 to-transparent" />
         </div>
 
+        {/* Floating Go Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="absolute top-24 left-6 md:left-12 z-30 flex items-center gap-2 text-white/50 hover:text-white transition-colors w-fit text-[10px] font-bold tracking-[0.3em] uppercase drop-shadow-md"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Go Back
+        </button>
+
         {/* Floating Mute Button */}
         {trailer && mounted && (
           <button
@@ -201,16 +236,23 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 pb-16 pt-32 flex flex-col gap-6">
           {/* Title Area */}
           <div className="flex flex-col gap-3">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors w-fit text-[10px] font-bold tracking-[0.3em] uppercase mb-4"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Go Back
-            </button>
-            <h1 className="text-4xl md:text-5xl lg:text-[64px] xl:text-[72px] font-black text-white tracking-[0.15em] leading-[1.1] uppercase drop-shadow-2xl text-balance">
-              {title}
-            </h1>
+            <div className="flex flex-col gap-1 items-start">
+              <h1 
+                ref={titleRef}
+                onClick={() => showTitleToggle && setIsTitleExpanded(!isTitleExpanded)}
+                className={`text-3xl sm:text-4xl md:text-5xl lg:text-[64px] xl:text-[72px] font-black text-white tracking-[0.15em] leading-[1.1] uppercase drop-shadow-2xl text-balance transition-all duration-300 ${showTitleToggle ? "cursor-pointer" : ""} ${isTitleExpanded ? "" : "line-clamp-2"}`}
+              >
+                {title}
+              </h1>
+              {showTitleToggle && (
+                <button 
+                  onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+                  className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1 hover:text-white transition-colors"
+                >
+                  {isTitleExpanded ? "Show Less" : "Show Full Title"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Metadata Row */}
@@ -229,17 +271,29 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
             ))}
           </div>
 
-          {/* Synopsis */}
-          <p className="text-white/70 text-sm md:text-base leading-[1.8] max-w-2xl text-balance drop-shadow-md font-medium mt-2 mb-4">
-            {item.overview}
-          </p>
+          <div className="mt-2 mb-4">
+            <p 
+              ref={overviewRef}
+              className={`text-white/70 text-sm md:text-base leading-[1.8] max-w-2xl text-balance drop-shadow-md font-medium transition-all duration-300 ${isOverviewExpanded ? "" : "line-clamp-3"}`}
+            >
+              {item.overview}
+            </p>
+            {showOverviewToggle && (
+              <button 
+                onClick={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                className="text-accent text-xs font-bold uppercase tracking-wider mt-2 hover:brightness-110 transition-colors"
+              >
+                {isOverviewExpanded ? "Show Less" : "Read More"}
+              </button>
+            )}
+          </div>
 
           {/* Action Buttons Row */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-4 w-full mt-2">
             {/* Primary Action */}
             <Link
               href={`/watch/${type}/${item.id}`}
-              className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8 h-[46px] sm:h-[50px] bg-accent text-accent-foreground hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] rounded-full font-bold text-[13px] tracking-widest uppercase transition-all duration-300 active:scale-95 whitespace-nowrap w-full sm:w-auto"
+              className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8 h-[46px] sm:h-[50px] bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[13px] tracking-widest uppercase transition-all duration-300 active:scale-95 whitespace-nowrap w-full sm:w-auto"
             >
               <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current group-hover:scale-110 transition-transform duration-300" />
               PLAY

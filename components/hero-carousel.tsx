@@ -136,7 +136,7 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
           <div className="flex flex-row items-center w-full sm:w-auto gap-2 sm:gap-4 mt-4 sm:mt-6">
             <Link
               href={`/watch/${currentMovie.title ? "movie" : "tv"}/${currentMovie.id}`}
-              className="group flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-2 py-3 sm:px-8 sm:py-4 bg-accent text-accent-foreground hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] rounded-full font-bold text-[11px] sm:text-[13px] tracking-widest transition-all duration-300 active:scale-95 whitespace-nowrap"
+              className="group flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-2 py-3 sm:px-8 sm:py-4 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[11px] sm:text-[13px] tracking-widest transition-all duration-300 active:scale-95 whitespace-nowrap"
             >
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current group-hover:scale-110 transition-transform duration-300" />
               WATCH NOW

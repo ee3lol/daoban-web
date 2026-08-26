@@ -232,7 +232,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       <Link
                         href={`/watch/${item.media_type}/${item.id}`}
                         onClick={onClose}
-                        className="group/btn flex items-center justify-center gap-2 px-6 py-2.5 bg-accent text-accent-foreground hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] rounded-full font-bold text-[11px] tracking-widest uppercase transition-all duration-300 active:scale-95 flex-1 sm:flex-none"
+                        className="group/btn flex items-center justify-center gap-2 px-6 py-2.5 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[11px] tracking-widest uppercase transition-all duration-300 active:scale-95 flex-1 sm:flex-none"
                       >
                         <Play className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform duration-300" />
                         Play

@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { logout, revokeSession, revokeOtherSessions } from "@/lib/actions/user";
+import UpdatePasswordModal from "@/components/update-password-modal";
 import { updateUserPreferences } from "@/lib/actions/appearance";
 import { authClient } from "@/lib/auth-client";
 import { HexColorPicker } from "react-colorful";
@@ -51,6 +52,10 @@ export default function ProfileTabs({
   const [isSavingAppearance, setIsSavingAppearance] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [shakeBanner, setShakeBanner] = useState(false);
+  
+  // Password Modal State
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
   const [pendingPreferences, setPendingPreferences] = useState<{
     accentColor?: string;
     filmGrain?: boolean;
@@ -164,7 +169,7 @@ export default function ProfileTabs({
   }, [router]);
 
   return (
-    <div className="flex flex-col md:flex-row w-full h-full relative font-sans overflow-y-auto md:overflow-hidden bg-background">
+    <div className="flex flex-col md:flex-row w-full h-full relative font-sans overflow-y-auto md:overflow-hidden bg-background-light">
       {/* 
  ========================================================
  MOBILE TOP BAR
@@ -346,7 +351,7 @@ export default function ProfileTabs({
  RIGHT MAIN CONTENT
  ======================================================== 
  */}
-      <div className="flex-1 h-auto md:h-full bg-background overflow-visible md:overflow-y-auto custom-scrollbar relative flex justify-center lg:justify-start">
+      <div className="flex-1 h-auto md:h-full bg-background-light overflow-visible md:overflow-y-auto custom-scrollbar relative flex justify-center lg:justify-start">
         <div className="w-full max-w-[1300px] p-6 pt-10 md:p-16 lg:pl-24 pb-32">
           {/* Liked Tab */}
           {activeTab === "liked" && (
@@ -409,9 +414,9 @@ export default function ProfileTabs({
 
               <div className="flex flex-col xl:flex-row gap-8 xl:gap-12 w-full">
                 {/* Left Column (Profile & Password) */}
-                <div className="flex-1 flex flex-col gap-10 max-w-3xl">
+                <div className="flex-1 flex flex-col gap-6 md:gap-10 max-w-3xl">
                   {/* Account Info */}
-                  <div className="w-full bg-background-elevated border border-white/5 p-8 rounded-2xl shadow-lg">
+                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-6">
                       Profile Details
                     </h3>
@@ -447,7 +452,7 @@ export default function ProfileTabs({
                   </div>
 
                   {/* Password & Authentication */}
-                  <div className="w-full bg-background-elevated border border-white/5 p-8 rounded-2xl shadow-lg">
+                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-2">
                       Password & Authentication
                     </h3>
@@ -455,7 +460,7 @@ export default function ProfileTabs({
                       Manage your security settings and password.
                     </p>
 
-                    <div className="flex items-center justify-between p-5 bg-background-light rounded-xl border border-white/5">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 bg-background-light rounded-xl border border-white/5 gap-4">
                       <div className="flex items-center gap-4">
                         <KeyRound className="w-5 h-5 text-[#EAE8E3] shrink-0" />
                         <div className="flex flex-col">
@@ -467,7 +472,10 @@ export default function ProfileTabs({
                           </p>
                         </div>
                       </div>
-                      <button className="px-5 py-2.5 bg-accent hover:brightness-110 hover:shadow-[0_0_15px_var(--color-accent)] text-accent-foreground rounded-lg font-semibold text-[13px] transition-colors shadow-lg active:scale-95 shrink-0">
+                      <button 
+                        onClick={() => setIsPasswordModalOpen(true)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[13px] transition-colors active:scale-95 shrink-0"
+                      >
                         Update
                       </button>
                     </div>
@@ -476,7 +484,7 @@ export default function ProfileTabs({
 
                 {/* Right Column (Connected Accounts) */}
                 <div className="w-full xl:w-[420px] shrink-0">
-                  <div className="w-full bg-background-elevated border border-white/5 p-8 rounded-2xl shadow-lg">
+                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-2">
                       Connected Accounts
                     </h3>
@@ -1103,6 +1111,13 @@ export default function ProfileTabs({
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <UpdatePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+        email={user.email}
+      />
     </div>
   );
 }
