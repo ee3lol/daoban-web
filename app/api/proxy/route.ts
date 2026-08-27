@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   console.log("PROXY URL:", url);
   console.log("PROXY HEADERS:", customHeaders);
 
-  return new Promise((resolve) => {
+  return new Promise<Response>((resolve) => {
     https.get(url, { headers: customHeaders }, (res) => {
       if (res.statusCode && res.statusCode >= 400) {
         resolve(new NextResponse(`Proxy upstream failed with ${res.statusCode}. URL: ${url}`, { status: res.statusCode }));
