@@ -92,9 +92,9 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
         </div>
       ))}
 
-      {/* Gradients to fade into #151515 background */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#151515] via-[#151515]/60 to-transparent z-10" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#151515] via-[#151515]/80 to-transparent z-10" />
+      {/* Gradients to fade into background */}
+      <div className="absolute inset-[-2px] z-10" style={{ backgroundImage: 'linear-gradient(to top, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 60%, transparent) 50%, transparent 100%)' }} />
+      <div className="absolute inset-[-2px] z-10" style={{ backgroundImage: 'linear-gradient(to right, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 40%, transparent 100%)' }} />
 
       {/* Content */}
       <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-20">

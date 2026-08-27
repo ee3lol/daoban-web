@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation';
 
 export default function Footer() {
   const pathname = usePathname() || '';
-  if (pathname.startsWith('/watch') || pathname.startsWith('/me')) return null;
+  const isDetailsPage = pathname.startsWith('/movie/') || pathname.startsWith('/tv/') || pathname.startsWith('/anime/');
+  
+  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || isDetailsPage) return null;
 
   return (
     <footer className="w-full bg-background-elevated border-t border-white/5 pt-16 pb-28 md:pb-8 relative z-50">

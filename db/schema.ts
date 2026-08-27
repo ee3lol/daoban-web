@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, AnyPgColumn } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 // ===== Better Auth Core Tables =====
 
@@ -93,3 +94,52 @@ export const userPreferences = pgTable('user_preferences', {
   filmGrain: boolean('film_grain').notNull().default(true),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const comments = pgTable('comments', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  mediaId: integer('media_id').notNull(),
+  mediaType: text('media_type').notNull(),
+  season: integer('season'),
+  episode: integer('episode'),
+  content: text('content').notNull(),
+  parentId: text('parent_id').references((): AnyPgColumn => comments.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const commentLikes = pgTable('comment_likes', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  commentId: text('comment_id').notNull().references(() => comments.id, { onDelete: 'cascade' }),
+  isLike: boolean('is_like').notNull(), // true = like, false = dislike
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  user: one(user, {
+    fields: [comments.userId],
+    references: [user.id],
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+    relationName: 'comment_replies',
+  }),
+  replies: many(comments, {
+    relationName: 'comment_replies',
+  }),
+  likes: many(commentLikes),
+}));
+
+export const commentLikesRelations = relations(commentLikes, ({ one }) => ({
+  user: one(user, {
+    fields: [commentLikes.userId],
+    references: [user.id],
+  }),
+  comment: one(comments, {
+    fields: [commentLikes.commentId],
+    references: [comments.id],
+  }),
+}));
+

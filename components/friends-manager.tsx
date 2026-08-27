@@ -33,6 +33,8 @@ export default function FriendsManager({
     text: string;
   } | null>(null);
 
+  const [optimisticRemoved, setOptimisticRemoved] = useState<string[]>([]);
+
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchUsername.trim()) return;
@@ -57,17 +59,20 @@ export default function FriendsManager({
   };
 
   const handleAccept = async (id: string) => {
+    setOptimisticRemoved((prev) => [...prev, id]);
     const res = await acceptFriendRequest(id);
     if (res.success) router.refresh();
   };
 
   const handleDecline = async (id: string) => {
+    setOptimisticRemoved((prev) => [...prev, id]);
     const res = await declineFriendRequest(id);
     if (res.success) router.refresh();
   };
 
-  const handleRemove = async (friendId: string) => {
+  const handleRemove = async (friendId: string, reqId: string) => {
     if (!confirm("Are you sure you want to remove this friend?")) return;
+    setOptimisticRemoved((prev) => [...prev, reqId]);
     const res = await removeFriend(friendId);
     if (res.success) router.refresh();
   };
@@ -139,11 +144,11 @@ export default function FriendsManager({
             <h2 className="text-xs font-bold text-[#888888] uppercase tracking-[0.2em] mb-4">
               Incoming Requests ({data?.pendingIncoming?.length || 0})
             </h2>
-            {data?.pendingIncoming?.length === 0 ? (
+            {data?.pendingIncoming?.filter((r: any) => !optimisticRemoved.includes(r.requestId)).length === 0 ? (
               <p className="text-[#888888]/50 text-sm">No incoming requests.</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {data.pendingIncoming.map((req: any) => (
+                {data.pendingIncoming.filter((r: any) => !optimisticRemoved.includes(r.requestId)).map((req: any) => (
                   <div
                     key={req.requestId}
                     className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)] rounded-[16px]"
@@ -195,11 +200,11 @@ export default function FriendsManager({
             <h2 className="text-xs font-bold text-[#888888] uppercase tracking-[0.2em] mb-4">
               Outgoing Requests ({data?.pendingOutgoing?.length || 0})
             </h2>
-            {data?.pendingOutgoing?.length === 0 ? (
+            {data?.pendingOutgoing?.filter((r: any) => !optimisticRemoved.includes(r.requestId)).length === 0 ? (
               <p className="text-[#888888]/50 text-sm">No outgoing requests.</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {data.pendingOutgoing.map((req: any) => (
+                {data.pendingOutgoing.filter((r: any) => !optimisticRemoved.includes(r.requestId)).map((req: any) => (
                   <div
                     key={req.requestId}
                     className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)] rounded-[16px]"
@@ -244,7 +249,7 @@ export default function FriendsManager({
       {/* All Friends View */}
       {tab === "all" && (
         <div>
-          {data?.accepted?.length === 0 ? (
+          {data?.accepted?.filter((r: any) => !optimisticRemoved.includes(r.requestId)).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-50">
               <Users className="w-16 h-16 text-[#888888] mb-4" />
               <p className="text-ivory font-medium">No friends yet</p>
@@ -254,7 +259,7 @@ export default function FriendsManager({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data?.accepted?.map((req: any) => (
+              {data?.accepted?.filter((r: any) => !optimisticRemoved.includes(r.requestId)).map((req: any) => (
                 <div
                   key={req.user.id}
                   className="group flex items-center justify-between p-4 bg-[rgba(255,255,255,0.01)] hover:bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.08)] rounded-[16px] transition-all"
@@ -290,7 +295,7 @@ export default function FriendsManager({
                       <MessageSquare className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleRemove(req.user.id)}
+                      onClick={() => handleRemove(req.user.id, req.requestId)}
                       className="w-10 h-10 rounded-[12px] bg-[rgba(255,255,255,0.05)] text-[#888888] hover:bg-red-500/80 hover:text-white transition-colors flex items-center justify-center"
                       title="Remove Friend"
                     >

@@ -74,3 +74,23 @@ body {
 .animate-shake {
   animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }
+
+/* Emoji Picker Customization */
+.EmojiPickerReact.epr-dark-theme {
+  --epr-search-input-bg-color-active: rgba(255, 255, 255, 0.05) !important;
+  --epr-search-input-bg-color: rgba(255, 255, 255, 0.02) !important;
+  --epr-bg-color: rgba(20, 20, 20, 0.95) !important;
+  --epr-picker-border-color: rgba(255, 255, 255, 0.1) !important;
+  --epr-search-border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.EmojiPickerReact.epr-dark-theme input.epr-search {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  transition: all 0.2s;
+}
+
+.EmojiPickerReact.epr-dark-theme input.epr-search:focus {
+  border-color: var(--accent-red) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}

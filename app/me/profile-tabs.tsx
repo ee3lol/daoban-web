@@ -333,15 +333,17 @@ export default function ProfileTabs({
           </div>
 
           <div className="border-t border-white/5 mt-4 pt-6">
-            <form action={logout}>
-              <button
-                type="submit"
-                className="flex items-center gap-3 px-4 py-3 w-full text-left font-semibold text-[13px] tracking-wide text-accent hover:bg-accent/10 transition-colors rounded-lg"
-              >
-                <LogOut className="w-4 h-4" />
-                Log Out
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={async () => {
+                await authClient.signOut();
+                window.location.href = "/";
+              }}
+              className="flex items-center gap-3 px-4 py-3 w-full text-left font-semibold text-[13px] tracking-wide text-accent hover:bg-accent/10 transition-colors rounded-lg"
+            >
+              <LogOut className="w-4 h-4" />
+              Log Out
+            </button>
           </div>
         </div>
       </div>
@@ -1089,14 +1091,22 @@ export default function ProfileTabs({
                 Discard
               </button>
               <button
-                onClick={async () => {
+                onClick={() => {
+                  const prefsToSave = pendingPreferences!;
+                  // Optimistically apply and hide banner instantly
+                  setPendingPreferences(null);
                   setIsSavingAppearance(true);
-                  try {
-                    await updateUserPreferences(pendingPreferences!);
-                    router.refresh();
-                  } catch (e) {
-                    setIsSavingAppearance(false);
-                  }
+                  
+                  updateUserPreferences(prefsToSave)
+                    .then(() => {
+                      router.refresh();
+                      setIsSavingAppearance(false);
+                    })
+                    .catch(() => {
+                      // Revert if failed
+                      setPendingPreferences(prefsToSave);
+                      setIsSavingAppearance(false);
+                    });
                 }}
                 disabled={isSavingAppearance}
                 className="flex-none px-5 py-2 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[12px] sm:text-[13px] transition-opacity flex items-center justify-center min-w-[90px]"

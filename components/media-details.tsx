@@ -20,8 +20,11 @@ import {
   ChevronDown,
   Bookmark,
   Heart,
+  Share2,
 } from "lucide-react";
 import ContentSection from "./content-section";
+import CommentsSection from "./comments-section";
+import ShareModal from "./share-modal";
 import { fetchTVSeason } from "@/lib/actions/tmdb";
 import {
   toggleWatchLater,
@@ -39,10 +42,17 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const overviewRef = useRef<HTMLParagraphElement>(null);
   const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    // Set the share URL once mounted
+    setShareUrl(window.location.href);
+  }, []);
 
   const validSeasons =
     item?.seasons?.filter((s: any) => s.season_number > 0) || [];
@@ -178,7 +188,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   return (
     <main className="min-h-screen bg-background-light pb-20">
       {/* Advanced Cinematic Hero Section */}
-      <div className="relative w-full h-[85vh] min-h-[600px] max-h-[900px] flex items-end overflow-hidden">
+      <div className="relative w-full h-[75vh] min-h-[500px] max-h-[800px] flex items-center overflow-hidden">
         {/* Background Layer */}
         <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none">
           {/* Always show static backdrop immediately, fade out when video is ready */}
@@ -204,9 +214,9 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           )}
 
           {/* Cinematic Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-l from-[#050505]/20 to-transparent" />
+          <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to top, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 50%, transparent 100%)' }} />
+          <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to right, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 40%, transparent 100%)' }} />
+          <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to left, color-mix(in srgb, var(--bg-light) 40%, transparent) 0%, transparent 100%)' }} />
         </div>
 
         {/* Floating Go Back Button */}
@@ -233,172 +243,146 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
         )}
 
         {/* Hero Content */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 pb-16 pt-32 flex flex-col gap-6">
-          {/* Title Area */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1 items-start">
-              <h1 
-                ref={titleRef}
-                onClick={() => showTitleToggle && setIsTitleExpanded(!isTitleExpanded)}
-                className={`text-3xl sm:text-4xl md:text-5xl lg:text-[64px] xl:text-[72px] font-black text-white tracking-[0.15em] leading-[1.1] uppercase drop-shadow-2xl text-balance transition-all duration-300 ${showTitleToggle ? "cursor-pointer" : ""} ${isTitleExpanded ? "" : "line-clamp-2"}`}
-              >
-                {title}
-              </h1>
-              {showTitleToggle && (
-                <button 
-                  onClick={() => setIsTitleExpanded(!isTitleExpanded)}
-                  className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1 hover:text-white transition-colors"
-                >
-                  {isTitleExpanded ? "Show Less" : "Show Full Title"}
-                </button>
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-20">
+          <div className="max-w-2xl flex flex-col gap-5 transform transition-all duration-700 translate-y-0 opacity-100">
+            <h1 
+              ref={titleRef}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#EAE8E3] tracking-tighter leading-[1.1] drop-shadow-2xl uppercase text-balance"
+            >
+              {title}
+            </h1>
+
+            {/* Metadata Row */}
+            <div className="flex items-center gap-3 text-[12px] sm:text-[13px] font-medium text-[#888888] flex-wrap mt-1">
+              {item.vote_average ? (
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                  <span className="text-accent font-bold">
+                    {item.vote_average.toFixed(1)}
+                  </span>
+                </div>
+              ) : null}
+
+              {releaseYear && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-[#888888]/40" />
+                  <span className="tracking-widest">{releaseYear}</span>
+                </>
+              )}
+
+              {formattedRuntime && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-[#888888]/40" />
+                  <span className="tracking-widest">{formattedRuntime}</span>
+                </>
+              )}
+
+              {item.genres?.length > 0 && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-[#888888]/40" />
+                  <span className="tracking-widest uppercase">
+                    {item.genres.map((g: any) => g.name).slice(0, 3).join(" • ")}
+                  </span>
+                </>
               )}
             </div>
-          </div>
 
-          {/* Metadata Row */}
-          <div className="flex flex-wrap items-center gap-6 text-[12px] font-bold tracking-[0.1em] text-white/60 uppercase mt-4">
-            {item.vote_average ? (
-              <div className="flex items-center gap-1.5 text-accent">
-                <Star className="w-4 h-4 fill-current" />
-                <span>{item.vote_average.toFixed(1)}</span>
-              </div>
-            ) : null}
-
-            {releaseYear && <span>{releaseYear}</span>}
-
-            {item.genres?.map((g: any) => (
-              <span key={g.id}>{g.name}</span>
-            ))}
-          </div>
-
-          <div className="mt-2 mb-4">
             <p 
               ref={overviewRef}
-              className={`text-white/70 text-sm md:text-base leading-[1.8] max-w-2xl text-balance drop-shadow-md font-medium transition-all duration-300 ${isOverviewExpanded ? "" : "line-clamp-3"}`}
+              className={`text-[#888888] text-[12px] sm:text-sm md:text-base leading-[1.6] sm:leading-[1.8] font-medium max-w-xl text-balance drop-shadow-md mt-1 sm:mt-2 transition-all duration-300 ${isOverviewExpanded ? "" : "line-clamp-3 sm:line-clamp-4"}`}
             >
               {item.overview}
             </p>
             {showOverviewToggle && (
               <button 
                 onClick={() => setIsOverviewExpanded(!isOverviewExpanded)}
-                className="text-accent text-xs font-bold uppercase tracking-wider mt-2 hover:brightness-110 transition-colors"
+                className="text-accent text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-colors w-fit"
               >
                 {isOverviewExpanded ? "Show Less" : "Read More"}
               </button>
             )}
-          </div>
 
-          {/* Action Buttons Row */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-4 w-full mt-2">
-            {/* Primary Action */}
-            <Link
-              href={`/watch/${type}/${item.id}`}
-              className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8 h-[46px] sm:h-[50px] bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[13px] tracking-widest uppercase transition-all duration-300 active:scale-95 whitespace-nowrap w-full sm:w-auto"
-            >
-              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current group-hover:scale-110 transition-transform duration-300" />
-              PLAY
-            </Link>
-
-            {/* Secondary Actions (Vertical Icon + Text on Mobile, Horizontal on Desktop) */}
-            <div className="flex items-center justify-around sm:justify-start w-full sm:w-auto gap-2 sm:gap-6">
-              {/* Watch Later */}
-              <button
-                disabled={!session?.user}
-                onClick={handleToggleWatchLater}
-                className={`group flex flex-col items-center gap-2 transition-transform ${!session?.user ? "opacity-40 pointer-events-none" : "active:scale-95"}`}
+            {/* Action Buttons Row */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start w-full gap-4 mt-6">
+              {/* Primary Action */}
+              <Link
+                href={`/watch/${type}/${item.id}`}
+                className="w-full sm:w-auto shrink-0 group flex items-center justify-center gap-3 px-8 py-3.5 sm:py-4 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[13px] tracking-widest transition-all duration-300 active:scale-95 whitespace-nowrap"
               >
-                <div
-                  className={`w-[46px] h-[46px] sm:w-[50px] sm:h-[50px] flex items-center justify-center rounded-full border backdrop-blur-md transition-all shadow-xl ${
-                    isWatchLater
-                      ? "bg-accent text-accent-foreground border-accent"
-                      : "bg-black/40 group-hover:bg-white/10 text-white border-white/20"
-                  }`}
-                >
-                  <motion.div
-                    initial={false}
-                    animate={{ scale: isWatchLater ? [1, 1.3, 1] : 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Bookmark
-                      className={`w-5 h-5 ${isWatchLater ? "fill-current" : ""}`}
-                    />
-                  </motion.div>
-                </div>
-                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-white/60 group-hover:text-white transition-colors">
-                  Later
-                </span>
-              </button>
+                <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform duration-300" />
+                PLAY
+              </Link>
 
-              {/* Favorite */}
-              <button
-                disabled={!session?.user}
-                onClick={handleToggleFavorite}
-                className={`group flex flex-col items-center gap-2 transition-transform ${!session?.user ? "opacity-40 pointer-events-none" : "active:scale-95"}`}
-              >
-                <div
-                  className={`w-[46px] h-[46px] sm:w-[50px] sm:h-[50px] flex items-center justify-center rounded-full border backdrop-blur-md transition-all shadow-xl ${
-                    isFavorite
-                      ? "bg-rose-500 text-white border-rose-500"
-                      : "bg-black/40 group-hover:bg-white/10 text-white border-white/20"
-                  }`}
-                >
-                  <motion.div
-                    initial={false}
-                    animate={{ scale: isFavorite ? [1, 1.3, 1] : 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`}
-                    />
-                  </motion.div>
-                </div>
-                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-white/60 group-hover:text-white transition-colors">
-                  Fav
-                </span>
-              </button>
-
-              {/* Episodes (TV Only) */}
-              {type !== "movie" && (
+              {/* Secondary Icon Buttons */}
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start overflow-x-auto hide-scrollbar">
+                {/* Watch Later */}
                 <button
-                  onClick={() =>
-                    document
-                      .getElementById("episodes-section")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  className="group flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                  title="Watch Later"
+                  disabled={!session?.user}
+                  onClick={handleToggleWatchLater}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full transition-all duration-300 backdrop-blur-md border ${
+                    !session?.user ? "opacity-40 pointer-events-none" : "active:scale-95 group"
+                  } ${
+                    isWatchLater
+                      ? "bg-accent/20 text-white border-accent/30 shadow-[0_0_15px_rgba(var(--color-accent),0.15)]"
+                      : "bg-white/5 hover:bg-accent/10 border-white/10 hover:border-accent/40 text-foreground hover:text-accent"
+                  }`}
                 >
-                  <div className="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px] flex items-center justify-center rounded-full border border-white/20 bg-black/40 group-hover:bg-white/10 backdrop-blur-md text-white transition-all shadow-xl">
-                    <ListVideo className="w-5 h-5" />
-                  </div>
-                  <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-white/60 group-hover:text-white transition-colors">
-                    Episodes
-                  </span>
+                  <Bookmark className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110 ${isWatchLater ? "fill-current text-white" : ""}`} />
                 </button>
-              )}
 
-              {/* Similars */}
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("similar-section")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="group flex flex-col items-center gap-2 active:scale-95 transition-transform"
-              >
-                <div className="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px] flex items-center justify-center rounded-full border border-white/20 bg-black/40 group-hover:bg-white/10 backdrop-blur-md text-white transition-all shadow-xl">
-                  <LayoutGrid className="w-5 h-5" />
-                </div>
-                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-white/60 group-hover:text-white transition-colors">
-                  Similars
-                </span>
-              </button>
+                {/* Favorite */}
+                <button
+                  title="Favorite"
+                  disabled={!session?.user}
+                  onClick={handleToggleFavorite}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full transition-all duration-300 backdrop-blur-md border ${
+                    !session?.user ? "opacity-40 pointer-events-none" : "active:scale-95 group"
+                  } ${
+                    isFavorite
+                      ? "bg-accent/20 text-accent border-accent/30 shadow-[0_0_15px_rgba(var(--color-accent),0.15)]"
+                      : "bg-white/5 hover:bg-accent/10 border-white/10 hover:border-accent/40 text-foreground hover:text-accent"
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110 ${isFavorite ? "fill-current text-accent" : ""}`} />
+                </button>
+
+                {/* Share */}
+                <button
+                  title="Share"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
+                >
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+                </button>
+
+                {/* Episodes (TV Only) */}
+                {type !== "movie" && (
+                  <button
+                    title="Episodes"
+                    onClick={() => document.getElementById("episodes-section")?.scrollIntoView({ behavior: "smooth" })}
+                    className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
+                  >
+                    <ListVideo className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+                  </button>
+                )}
+
+                {/* Similars */}
+                <button
+                  title="Similars"
+                  onClick={() => document.getElementById("similars-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
+                >
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Content Layout */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 mt-16 flex flex-col gap-24">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-12 relative z-20 flex flex-col gap-0 md:gap-4">
         {/* Episodes Section */}
         {type !== "movie" && (
           <div id="episodes-section" className="scroll-mt-32">
@@ -545,7 +529,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   key={actor.id}
                   className="flex flex-col gap-3 group cursor-pointer shrink-0 w-[80px] md:w-[120px] items-center text-center snap-start"
                 >
-                  <div className="w-[80px] h-[80px] md:w-[120px] md:h-[120px] rounded-full overflow-hidden bg-black/50 border-2 border-transparent group-hover:border-accent transition-all duration-300 shrink-0 shadow-lg group-hover:shadow-[0_0_20px_var(--color-accent)]/20 p-1">
+                  <div className="w-[80px] h-[80px] md:w-[120px] md:h-[120px] rounded-full overflow-hidden bg-black/50 border-2 border-transparent group-hover:border-accent transition-all duration-300 shrink-0 shadow-lg p-1">
                     <div className="w-full h-full rounded-full overflow-hidden">
                       {actor.profile_path ? (
                         <img
@@ -576,11 +560,31 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
 
         {/* Similar Titles */}
         {similar.length > 0 && (
-          <div id="similar-section" className="scroll-mt-32 -mx-6 md:-mx-12">
+          <div id="similar-section" className="scroll-mt-32 mb-16 -mx-6 md:-mx-12">
             <ContentSection title="Similar Titles" items={similar} />
           </div>
         )}
+
+        {/* Comments Section */}
+        <section className="relative mb-16">
+          <div className="flex items-center w-full sm:w-auto mb-8 relative z-20">
+            <h2 className="text-[#EAE8E3] text-[13px] sm:text-[15px] font-bold tracking-[0.2em] uppercase whitespace-nowrap">
+              Discussion
+            </h2>
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-[#888888]/20 to-transparent ml-4 sm:mx-6" />
+          </div>
+          <div className="w-full relative z-20">
+            <CommentsSection mediaId={item.id} mediaType={type} currentUser={session?.user} variant="inline" />
+          </div>
+        </section>
       </div>
+
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        url={shareUrl} 
+        title={title} 
+      />
     </main>
   );
 }
