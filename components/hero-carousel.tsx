@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { getTMDBImageUrl } from "@/lib/tmdb";
 import { Play, Info, Star } from "lucide-react";
@@ -70,10 +71,10 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   ).split("-")[0];
   const genres = currentMovie.genre_ids
     ? currentMovie.genre_ids
-        .map((id) => GENRE_MAP[id])
-        .filter(Boolean)
-        .slice(0, 2)
-        .join(" • ")
+      .map((id) => GENRE_MAP[id])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(" • ")
     : null;
 
   return (
@@ -84,10 +85,12 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
           key={movie.id}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? "opacity-100 z-0" : "opacity-0 z-[-1]"}`}
         >
-          <img
+          <Image
             src={getTMDBImageUrl(movie.backdrop_path, "original")}
-            alt={movie.title || movie.name}
-            className={`w-full h-full object-cover opacity-60 transition-transform ease-out ${idx === currentIndex ? "scale-105 duration-[10000ms]" : "scale-100 duration-0"}`}
+            alt={movie.title! || movie.name!}
+            fill
+            priority={idx === 0}
+            className={`object-cover opacity-60 transition-transform ease-out ${idx === currentIndex ? "scale-105 duration-[10000ms]" : "scale-100 duration-0"}`}
           />
         </div>
       ))}

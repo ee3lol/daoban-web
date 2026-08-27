@@ -7,7 +7,9 @@ import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
-export async function getUserPreferences() {
+import { cache } from 'react';
+
+export const getUserPreferences = cache(async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -33,7 +35,7 @@ export async function getUserPreferences() {
   }
 
   return prefs[0];
-}
+});
 
 export async function updateUserPreferences(data: {
   accentColor?: string;

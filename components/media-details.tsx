@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -192,10 +193,12 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
         {/* Background Layer */}
         <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none">
           {/* Always show static backdrop immediately, fade out when video is ready */}
-          <img
+          <Image
             src={getTMDBImageUrl(item.backdrop_path, "original")}
             alt={title}
-            className={`absolute inset-0 w-full h-full object-cover scale-105 transition-opacity duration-300 ease-in-out ${trailer && isVideoReady ? "opacity-0" : "opacity-60"}`}
+            fill
+            priority
+            className={`object-cover scale-105 transition-opacity duration-300 ease-in-out ${trailer && isVideoReady ? "opacity-0" : "opacity-60"}`}
           />
 
           {/* Overlay YouTube Video, fade in after UI hides */}
@@ -458,10 +461,12 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                       {/* Thumbnail */}
                       <div className="w-full sm:w-[240px] shrink-0 aspect-video rounded-xl overflow-hidden bg-black/50 border border-white/5 relative">
                         {ep.still_path ? (
-                          <img
+                          <Image
                             src={getTMDBImageUrl(ep.still_path, "w500")}
                             alt={ep.name}
-                            className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                            fill
+                            sizes="(max-width: 640px) 100vw, 240px"
+                            className="object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-white/20 bg-black/50">
@@ -532,10 +537,12 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   <div className="w-[80px] h-[80px] md:w-[120px] md:h-[120px] rounded-full overflow-hidden bg-black/50 border-2 border-transparent group-hover:border-accent transition-all duration-300 shrink-0 shadow-lg p-1">
                     <div className="w-full h-full rounded-full overflow-hidden">
                       {actor.profile_path ? (
-                        <img
+                        <Image
                           src={getTMDBImageUrl(actor.profile_path, "w500")}
                           alt={actor.name}
-                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
+                          fill
+                          sizes="(max-width: 768px) 80px, 120px"
+                          className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20 bg-black/50 text-[10px] font-bold tracking-wider">

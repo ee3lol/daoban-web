@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import crypto from 'crypto';
 
 function generateId(length = 16) {
@@ -79,21 +80,21 @@ export async function toggleFavorite(mediaId: number, mediaType: string, title: 
   }
 }
 
-export async function getWatchLater() {
+export const getWatchLater = cache(async () => {
   const user = await getCurrentUser();
   if (!user) return [];
   
   return db.select().from(watchLater).where(eq(watchLater.userId, user.id));
-}
+});
 
-export async function getFavorites() {
+export const getFavorites = cache(async () => {
   const user = await getCurrentUser();
   if (!user) return [];
   
   return db.select().from(favorites).where(eq(favorites.userId, user.id));
-}
+});
 
-export async function checkMediaSaved(mediaId: number) {
+export const checkMediaSaved = cache(async (mediaId: number) => {
   const user = await getCurrentUser();
   if (!user) return { isWatchLater: false, isFavorite: false };
 
@@ -106,7 +107,7 @@ export async function checkMediaSaved(mediaId: number) {
     isWatchLater: wl.length > 0,
     isFavorite: fav.length > 0
   };
-}
+});
 
 export async function logout() {
   await auth.api.signOut({

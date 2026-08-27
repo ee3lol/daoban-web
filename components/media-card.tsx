@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
+import Image from 'next/image';
 import { getTMDBImageUrl } from '@/lib/tmdb';
 import { Star } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
   const title = item.title || item.name;
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const year = (item.release_date || item.first_air_date || '').split('-')[0];
-  
+
   // Determine routing type
   let type = item.title ? 'movie' : 'tv';
   if (item.media_type) {
@@ -36,18 +37,19 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
   }
 
   return (
-    <Link 
+    <Link
       href={`/${type}/${item.id}`}
       className="group relative w-full aspect-[2/3] block rounded-[12px] overflow-hidden cursor-pointer shrink-0 snap-start bg-[#1a1a1a] shadow-lg"
     >
       {/* Poster Image */}
-      <img 
-        src={getTMDBImageUrl(item.poster_path, 'w500')} 
-        alt={title}
-        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-        loading="lazy"
+      <Image
+        src={getTMDBImageUrl(item.poster_path, 'w500')}
+        alt={title!}
+        fill
+        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
       />
-      
+
       {/* Stronger Bottom Gradient for text legibility */}
       <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -64,7 +66,7 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
           <h3 className="text-[#EAE8E3] font-bold text-[12px] sm:text-[14px] line-clamp-2 leading-snug drop-shadow-xl">
             {title}
           </h3>
-          
+
           <div className="flex items-center justify-between opacity-80 group-hover:opacity-100 transition-opacity duration-300">
             <span className="text-[#888888] group-hover:text-[#EAE8E3] transition-colors text-[10px] sm:text-[11px] font-semibold tracking-wider">{year}</span>
             {rating && rating !== '0.0' && (
