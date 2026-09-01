@@ -7,7 +7,7 @@ export default function Preloader() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Hide preloader after a short delay to allow for hydration and initial paint
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
@@ -23,7 +23,7 @@ export default function Preloader() {
           transition={{ duration: 0.6, ease: "easeInOut" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--bg-base)]"
         >
-          {/* Glowing background effect */}
+          {}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-[250px] md:w-[400px] h-[250px] md:h-[400px] bg-accent/15 rounded-full blur-[100px] animate-pulse" />
           </div>

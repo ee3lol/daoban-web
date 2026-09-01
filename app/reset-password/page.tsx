@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
 
       <main className="pt-28 md:pt-36 px-4 md:px-8 max-w-7xl mx-auto pb-20 flex justify-center">
         <div className="w-full max-w-md bg-background-elevated border border-white/5 p-8 rounded-2xl shadow-2xl relative overflow-hidden">
-          {/* Subtle glow effect behind form */}
+          {}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-accent/5 blur-[100px] pointer-events-none" />
           
           <div className="relative z-10 flex flex-col items-center text-center mb-8">

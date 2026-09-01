@@ -9,8 +9,23 @@ import { getContrastColor } from "@/lib/color";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DAOBAN | 盗版",
-  description: "A cinematic movie streaming experience.",
+  title: {
+    template: "%s | DAOBAN",
+    default: "DAOBAN - watch movies and shows",
+  },
+  description: "just a chill place to stream movies and tv shows for free. no bs.",
+  openGraph: {
+    title: "DAOBAN",
+    description: "just a chill place to stream movies and tv shows for free. no bs.",
+    url: "https://daoban.lol",
+    siteName: "DAOBAN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DAOBAN",
+    description: "just a chill place to stream movies and tv shows for free. no bs.",
+  }
 };
 
 import { Viewport } from "next";
@@ -26,6 +41,9 @@ import Footer from "@/components/footer";
 import SetUsernameModal from "@/components/set-username-modal";
 import { getUserPreferences } from "@/lib/actions/appearance";
 import Preloader from "@/components/preloader";
+import FriendsSidebar from "@/components/friends-sidebar";
+import { getFriendData } from "@/lib/actions/friends";
+import { SocketProvider } from "@/components/socket-provider";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
@@ -34,12 +52,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const user = session?.user ?? null;
   const prefs = await getUserPreferences();
+  const friendData = user ? await getFriendData() : null;
   
   const accentColor = prefs?.accentColor ?? '#fc535a';
   const showFilmGrain = prefs?.filmGrain ?? true;
   const themeStyle = prefs?.themeStyle ?? 'dark';
 
-  // Map themeStyle to CSS variables
   let bgBase = '#050505';
   let bgElevated = '#0a0a0a';
   let bgLight = '#151515';
@@ -57,9 +75,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const accentForeground = getContrastColor(accentColor);
 
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={themeStyle}>
       <body 
-        className={`${inter.className} min-h-full flex flex-col`}
+        className={`antialiased bg-background-base text-[#EAE8E3] min-h-screen relative overflow-x-hidden ${inter.className}`}
         style={{ 
           '--accent-red': accentColor,
           '--accent-foreground': accentForeground,
@@ -68,12 +86,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           '--bg-light': bgLight
         } as React.CSSProperties}
       >
-        {showFilmGrain && <div className="film-grain" />}
-        <Preloader />
-        <Navbar user={user} />
-        {user && !user.hasSetUsername && <SetUsernameModal user={user} />}
-        {children}
-        <Footer />
+        <SocketProvider userId={user?.id}>
+          {showFilmGrain && <div className="film-grain" />}
+          <Preloader />
+          <Navbar user={user} />
+          <FriendsSidebar user={user} data={friendData} />
+          {user && !user.hasSetUsername && <SetUsernameModal user={user} />}
+          {children}
+          <Footer />
+        </SocketProvider>
       </body>
     </html>
   );

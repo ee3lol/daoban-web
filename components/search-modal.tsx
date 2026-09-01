@@ -21,12 +21,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Mount portal
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Focus input on open & clear state
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -42,7 +40,6 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     };
   }, [isOpen]);
 
-  // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -51,7 +48,6 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Debounced Search
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
@@ -63,12 +59,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       setIsLoading(true);
       try {
         const data = await searchTMDB(query);
-        // Filter out people, keep only movies and tv
+        
         const filtered =
           data.results?.filter(
             (r: any) => r.media_type === "movie" || r.media_type === "tv",
           ) || [];
-        setResults(filtered.slice(0, 10)); // Limit to 10 results for performance
+        setResults(filtered.slice(0, 10)); 
       } catch (error) {
         console.error("Search failed:", error);
       } finally {
@@ -83,12 +79,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] sm:pt-[15vh] px-4 backdrop-blur-[2px] bg-black/80">
-      {/* Click outside to close */}
+      {}
       <div className="absolute inset-0 z-0" onClick={onClose} />
 
-      {/* Modal Container */}
+      {}
       <div className="relative z-10 w-full max-w-2xl bg-background border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
           <h2 className="text-xl font-bold text-[#EAE8E3] tracking-wide">
             Search
@@ -101,7 +97,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           </button>
         </div>
 
-        {/* Search Input */}
+        {}
         <div className="px-6 py-4 border-b border-white/5 bg-background-elevated">
           <div className="relative flex items-center">
             <Search className="absolute left-4 w-5 h-5 text-white/40" />
@@ -124,7 +120,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           </div>
         </div>
 
-        {/* Results Area */}
+        {}
         <div className="flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar bg-background">
           {isLoading && !results.length && (
             <div className="flex flex-col items-center justify-center p-12 text-white/30 gap-4">
@@ -211,7 +207,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         </div>
                       </div>
 
-                      {/* Mobile Expand Button */}
+                      {}
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -225,7 +221,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       </button>
                     </div>
 
-                    {/* Actions Area */}
+                    {}
                     <div
                       className={`${isExpanded ? "flex pt-2 w-full" : "hidden"} sm:flex items-center gap-2 w-full sm:w-auto opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                     >

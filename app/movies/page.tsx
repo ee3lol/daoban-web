@@ -1,6 +1,12 @@
 import HeroCarousel from '@/components/hero-carousel';
 import ContentSection from '@/components/content-section';
 import { getPopularMovies, getNowPlayingMovies, getUpcomingMovies, getTopRated } from '@/lib/tmdb';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Movies",
+  description: "browse all the best movies to stream for free right now. no bs.",
+};
 
 export default async function MoviesPage() {
   const [popularData, nowPlayingData, upcomingData, topRatedData] = await Promise.all([

@@ -5,16 +5,16 @@ export default function DiscordBanner() {
     <section className="w-full max-w-7xl mx-auto px-6 md:px-12 py-10 relative z-20 mt-4">
       <div className="relative w-full h-[120px] md:h-[130px] rounded-[6px] overflow-hidden flex items-center border border-white/5 bg-[#111111] group">
         
-        {/* Background Image - Barely visible */}
+        {}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 grayscale mix-blend-luminosity transition-transform duration-1000 group-hover:scale-105"
           style={{ backgroundImage: `url('/discord-party.png')`, backgroundPosition: 'center 40%' }}
         />
         
-        {/* Dark Overlay */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-r from-[#111111] via-[#111111]/90 to-[#111111]/80" />
         
-        {/* Content */}
+        {}
         <div className="relative z-10 px-6 md:px-10 flex flex-row items-center justify-between w-full gap-6">
           
           <div className="flex flex-col gap-1.5">

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import https from "https";
 
 export const dynamic = 'force-dynamic';
 
@@ -23,63 +22,77 @@ export async function GET(req: NextRequest) {
   } catch(e) {
     console.error("Failed to parse headers", e);
   }
+
+  const clientRange = req.headers.get("Range");
+  if (clientRange) {
+    customHeaders["Range"] = clientRange;
+  }
   
-  console.log("PROXY URL:", url);
-  console.log("PROXY HEADERS:", customHeaders);
+  // NOTE: Skipping SSRF protection per user request
 
-  return new Promise<Response>((resolve) => {
-    https.get(url, { headers: customHeaders }, (res) => {
-      if (res.statusCode && res.statusCode >= 400) {
-        resolve(new NextResponse(`Proxy upstream failed with ${res.statusCode}. URL: ${url}`, { status: res.statusCode }));
-        return;
-      }
+  try {
+    const upstreamRes = await fetch(url, {
+      headers: customHeaders,
+      redirect: 'follow',
+      // We don't cache this fetch directly, let Next.js or browser handle caching
+      cache: 'no-store' 
+    });
 
-      const contentType = res.headers["content-type"] || "";
-      let bodyData = Buffer.alloc(0);
+    if (!upstreamRes.ok && upstreamRes.status >= 400) {
+      return new NextResponse(`Proxy upstream failed with ${upstreamRes.status}. URL: ${url}`, { status: upstreamRes.status });
+    }
 
-      res.on("data", (chunk) => {
-        bodyData = Buffer.concat([bodyData, chunk]);
-      });
+    const contentType = upstreamRes.headers.get("content-type") || "";
 
-      res.on("end", () => {
-        if (contentType.includes("mpegurl") || url.includes(".m3u8")) {
-          const text = bodyData.toString('utf8');
-          const finalUrl = res.url || url; // Native https might not track redirect url easily if it doesn't follow redirects, but assuming no redirect for this specific URL. Wait, https.get does NOT follow redirects!
-          // Actually, if we need redirects we should handle them, but let's try raw first
-          const baseUrl = new URL(url);
-          const basePath = url.substring(0, url.lastIndexOf('/') + 1);
-          
-          const rewritten = text.split('\n').map(line => {
-            const trimmed = line.trim();
-            if (trimmed === '' || trimmed.startsWith('#')) return line;
-            let absoluteUrl = trimmed;
-            if (!trimmed.startsWith('http')) {
-              if (trimmed.startsWith('//')) absoluteUrl = baseUrl.protocol + trimmed;
-              else if (trimmed.startsWith('/')) absoluteUrl = baseUrl.origin + trimmed;
-              else absoluteUrl = basePath + trimmed;
-            }
-            return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}&headers=${encodeURIComponent(headerParam || '')}`;
-          }).join('\n');
-          
-          resolve(new NextResponse(rewritten, {
-            headers: {
-              "Content-Type": "application/vnd.apple.mpegurl",
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "no-store",
-            }
-          }));
-        } else {
-          resolve(new NextResponse(bodyData, {
-            headers: {
-              "Content-Type": contentType || "video/MP2T",
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "public, max-age=31536000",
-            }
-          }));
+    // If it's an m3u8 playlist, we need to rewrite it
+    if (contentType.includes("mpegurl") || url.includes(".m3u8")) {
+      const text = await upstreamRes.text();
+      const baseUrl = new URL(url);
+      const basePath = url.substring(0, url.lastIndexOf('/') + 1);
+      
+      const rewritten = text.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed === '' || trimmed.startsWith('#')) return line;
+        let absoluteUrl = trimmed;
+        if (!trimmed.startsWith('http')) {
+          if (trimmed.startsWith('//')) absoluteUrl = baseUrl.protocol + trimmed;
+          else if (trimmed.startsWith('/')) absoluteUrl = baseUrl.origin + trimmed;
+          else absoluteUrl = basePath + trimmed;
+        }
+        return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}&headers=${encodeURIComponent(headerParam || '')}`;
+      }).join('\n');
+      
+      return new NextResponse(rewritten, {
+        headers: {
+          "Content-Type": "application/vnd.apple.mpegurl",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
         }
       });
-    }).on("error", (err) => {
-      resolve(new NextResponse(err.message, { status: 500 }));
+    }
+
+    // For video streams and other binary files, stream directly
+    const responseHeaders = new Headers();
+    responseHeaders.set("Content-Type", contentType || "video/MP2T");
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Cache-Control", "public, max-age=31536000");
+
+    // Forward important headers from upstream
+    const contentRange = upstreamRes.headers.get("Content-Range");
+    if (contentRange) responseHeaders.set("Content-Range", contentRange);
+    
+    const contentLength = upstreamRes.headers.get("Content-Length");
+    if (contentLength) responseHeaders.set("Content-Length", contentLength);
+
+    const acceptRanges = upstreamRes.headers.get("Accept-Ranges");
+    if (acceptRanges) responseHeaders.set("Accept-Ranges", acceptRanges);
+
+    return new NextResponse(upstreamRes.body, {
+      status: upstreamRes.status,
+      headers: responseHeaders,
     });
-  });
+  } catch (err: any) {
+    console.error("Proxy error:", err);
+    return new NextResponse(err.message, { status: 500 });
+  }
 }

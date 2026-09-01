@@ -85,7 +85,7 @@ const CommentNode = ({
       <div className="flex gap-3">
         <div className="w-8 h-8 rounded-full bg-white/10 shrink-0 overflow-hidden flex items-center justify-center">
           {comment.user.image ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
+            
             <img src={comment.user.image} alt={comment.user.name} className="w-full h-full object-cover" />
           ) : (
             <span className="text-xs font-bold text-white/50">{comment.user.name?.[0]?.toUpperCase()}</span>
@@ -111,7 +111,7 @@ const CommentNode = ({
           
           <p className="text-[13px] text-white/80 mt-1 whitespace-pre-wrap break-words leading-relaxed">{comment.content}</p>
           
-          {/* Action Bar */}
+          {}
           <div className="flex items-center gap-4 mt-2 mb-1">
             <button 
               onClick={() => handleLike(comment.id, true)} 
@@ -136,7 +136,7 @@ const CommentNode = ({
             </button>
           </div>
 
-          {/* Reply Input Box */}
+          {}
           {replyingTo === actualThreadId && !isReply && (!showReplies || !comment.replies || comment.replies.length === 0) && (
             <form onSubmit={(e) => handleSubmit(e, actualThreadId)} className="mt-2 mb-4 relative flex items-start gap-2 bg-white/5 border border-white/10 rounded-xl focus-within:border-accent/50 focus-within:bg-white/10 transition-all animate-in fade-in zoom-in-95 p-1 pl-3">
               {replyingToUser && (
@@ -182,7 +182,7 @@ const CommentNode = ({
             </form>
           )}
 
-          {/* Collapsible Replies Toggle */}
+          {}
           {!isReply && comment.replies && comment.replies.length > 0 && (
             <button 
               onClick={() => setShowReplies(!showReplies)}
@@ -195,7 +195,7 @@ const CommentNode = ({
         </div>
       </div>
 
-      {/* Render Nested Replies */}
+      {}
       {!isReply && comment.replies && comment.replies.length > 0 && showReplies && (
         <div className="ml-10 mt-2 flex flex-col gap-4">
           {comment.replies.map((reply: CommentType) => (
@@ -216,7 +216,7 @@ const CommentNode = ({
               handleSubmit={handleSubmit}
             />
           ))}
-          {/* Nested Reply Input Box */}
+          {}
           {replyingTo === actualThreadId && (
             <form onSubmit={(e) => handleSubmit(e, actualThreadId)} className="mt-2 mb-4 relative flex items-start gap-2 bg-white/5 border border-white/10 rounded-xl focus-within:border-accent/50 focus-within:bg-white/10 transition-all animate-in fade-in zoom-in-95 p-1 pl-3">
               {replyingToUser && (
@@ -295,9 +295,9 @@ export default function CommentsSection({ mediaId, mediaType, season, episode, c
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [mediaId, mediaType, season, episode]);
 
   const handleSubmit = async (e: React.FormEvent, parentId: string | null = null) => {
@@ -322,7 +322,7 @@ export default function CommentsSection({ mediaId, mediaType, season, episode, c
     if (!res.success) {
       alert(res.error || "Failed to post message");
     } else {
-      // Reload completely to get fresh data easily (optimistic for nested trees is complex)
+      
       load();
     }
   };
@@ -343,7 +343,6 @@ export default function CommentsSection({ mediaId, mediaType, season, episode, c
       return;
     }
 
-    // Optimistic UI for likes
     const updateTree = (nodes: CommentType[]): CommentType[] => {
       return nodes.map(node => {
         if (node.id === id) {
@@ -352,12 +351,12 @@ export default function CommentsSection({ mediaId, mediaType, season, episode, c
           let newDislikes = node.dislikesCount;
 
           if (node.userLikeStatus === (isLike ? 'like' : 'dislike')) {
-            // Removing the existing like/dislike
+            
             newLikeStatus = null;
             if (isLike) newLikes--;
             else newDislikes--;
           } else {
-            // Changing or adding
+            
             if (node.userLikeStatus === 'like') newLikes--;
             if (node.userLikeStatus === 'dislike') newDislikes--;
             
@@ -378,7 +377,7 @@ export default function CommentsSection({ mediaId, mediaType, season, episode, c
     setComments(prev => updateTree(prev));
     const res = await toggleCommentLike(id, isLike);
     if (!res.success) {
-      // Silently reload if failed
+      
       load();
     }
   };

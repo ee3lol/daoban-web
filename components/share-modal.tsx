@@ -12,7 +12,6 @@ interface ShareModalProps {
   title: string;
 }
 
-// Inline SVGs for brand icons removed from Lucide
 const TwitterIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -118,7 +117,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
               boxShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
             }}
           >
-            {/* Header */}
+            {}
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
               <h2 className="text-[13px] font-bold text-foreground tracking-widest uppercase">
                 Share
@@ -132,7 +131,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
             </div>
 
             <div className="p-6 flex flex-col gap-6">
-              {/* Native Share Option (Mobile usually) */}
+              {}
               {hasNativeShare && (
                 <button
                   onClick={handleNativeShare}
@@ -142,7 +141,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
                 </button>
               )}
 
-              {/* Social Links */}
+              {}
               <div className="grid grid-cols-2 gap-4">
                 {shareLinks.map((link) => (
                   <a
@@ -160,7 +159,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
                 ))}
               </div>
 
-              {/* Copy Link */}
+              {}
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] font-bold text-muted tracking-widest uppercase flex items-center gap-2">
                   <div className="h-[1px] flex-1 bg-white/10" />

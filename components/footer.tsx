@@ -7,14 +7,14 @@ export default function Footer() {
   const pathname = usePathname() || '';
   const isDetailsPage = pathname.startsWith('/movie/') || pathname.startsWith('/tv/') || pathname.startsWith('/anime/');
   
-  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || isDetailsPage) return null;
+  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends') || isDetailsPage) return null;
 
   return (
     <footer className="w-full bg-background-elevated border-t border-white/5 pt-16 pb-28 md:pb-8 relative z-50">
       <div className="w-full max-w-7xl mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
           
-          {/* Brand Col */}
+          {}
           <div className="col-span-1 md:col-span-2 flex flex-col items-start gap-4">
             <Link href="/" className="flex items-center gap-3 group">
               <span className="text-[#EAE8E3] font-semibold text-lg tracking-[0.15em] transition-colors">DAOBAN</span>
@@ -26,7 +26,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Links Col 1 */}
+          {}
           <div className="flex flex-col gap-4">
             <h3 className="text-[#EAE8E3] text-[12px] font-bold tracking-[0.2em] uppercase mb-2">Explore</h3>
             <Link href="/movies" className="text-[#888888] hover:text-accent text-[13px] transition-colors w-fit">Movies</Link>
@@ -35,7 +35,7 @@ export default function Footer() {
             <Link href="/trending" className="text-[#888888] hover:text-accent text-[13px] transition-colors w-fit">Trending</Link>
           </div>
 
-          {/* Links Col 2 */}
+          {}
           <div className="flex flex-col gap-4">
             <h3 className="text-[#EAE8E3] text-[12px] font-bold tracking-[0.2em] uppercase mb-2">Legal</h3>
             <Link href="#" className="text-[#888888] hover:text-[#EAE8E3] text-[13px] transition-colors w-fit">Terms of Service</Link>
@@ -45,7 +45,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {}
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[#888888] text-[11px] tracking-wider uppercase font-medium">
             &copy; {new Date().getFullYear()} DAOBAN. All rights reserved.

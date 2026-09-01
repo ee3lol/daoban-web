@@ -45,7 +45,7 @@ curl -H "x-daoban-api-key: daoban-dev-key" https://api.daoban.lol/api/movie/550
     "title": "Fight Club",
     "description": "A ticking-time-bomb insomniac...",
     "poster": "https://image.tmdb.org/t/p/w500/...",
-    "cover": "https://image.tmdb.org/t/p/w1280/...",
+    "cover": "https://image.tmdb.org/t/p/w500/...",
     "type": "movie",
     "releaseYear": 1999,
     "status": "Completed",

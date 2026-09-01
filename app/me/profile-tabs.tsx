@@ -16,12 +16,15 @@ import {
   KeyRound,
   Menu,
   X,
+  History,
 } from "lucide-react";
 import { logout, revokeSession, revokeOtherSessions } from "@/lib/actions/user";
 import UpdatePasswordModal from "@/components/update-password-modal";
+import AdvancedHistoryTab from "@/components/advanced-history-tab";
 import { updateUserPreferences } from "@/lib/actions/appearance";
 import { authClient } from "@/lib/auth-client";
 import { HexColorPicker } from "react-colorful";
+import AvatarUpload from "@/components/avatar-upload";
 
 interface SessionData {
   currentSessionId: string | null;
@@ -35,6 +38,7 @@ export default function ProfileTabs({
   watchLater,
   favorites,
   preferences,
+  history = [],
 }: {
   user: any;
   sessionData: SessionData | null;
@@ -42,18 +46,18 @@ export default function ProfileTabs({
   watchLater: any[];
   favorites: any[];
   preferences?: any;
+  history?: any[];
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "liked" | "watch_later" | "my_account" | "appearance" | "devices"
+    "liked" | "watch_later" | "history" | "my_account" | "appearance" | "devices"
   >("my_account");
   const [isRevoking, setIsRevoking] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSavingAppearance, setIsSavingAppearance] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [shakeBanner, setShakeBanner] = useState(false);
-  
-  // Password Modal State
+
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [pendingPreferences, setPendingPreferences] = useState<{
@@ -64,10 +68,10 @@ export default function ProfileTabs({
 
   const currentPrefs = pendingPreferences ||
     preferences || {
-      accentColor: "#fc535a",
-      filmGrain: true,
-      themeStyle: "dark",
-    };
+    accentColor: "#fc535a",
+    filmGrain: true,
+    themeStyle: "dark",
+  };
   const hasUnsavedChanges =
     pendingPreferences !== null &&
     (pendingPreferences.accentColor !== preferences?.accentColor ||
@@ -75,7 +79,7 @@ export default function ProfileTabs({
       pendingPreferences.themeStyle !== (preferences?.themeStyle || "dark"));
 
   useEffect(() => {
-    // Live preview Accent Color
+
     if (pendingPreferences?.accentColor) {
       document.body.style.setProperty(
         "--accent-red",
@@ -87,7 +91,6 @@ export default function ProfileTabs({
       document.body.style.setProperty("--accent-red", "#fc535a");
     }
 
-    // Live preview Background Theme
     const activeTheme =
       pendingPreferences?.themeStyle || preferences?.themeStyle || "dark";
     if (activeTheme === "pitch_black") {
@@ -117,7 +120,7 @@ export default function ProfileTabs({
       preferences &&
       pendingPreferences.accentColor === preferences.accentColor &&
       (pendingPreferences.themeStyle || "dark") ===
-        (preferences.themeStyle || "dark") &&
+      (preferences.themeStyle || "dark") &&
       (pendingPreferences.filmGrain ?? true) === (preferences.filmGrain ?? true)
     ) {
       setPendingPreferences(null);
@@ -128,7 +131,7 @@ export default function ProfileTabs({
   const handleTabClick = (tabId: any) => {
     if (hasUnsavedChanges) {
       setShakeBanner(true);
-      setTimeout(() => setShakeBanner(false), 400); // matches animation duration
+      setTimeout(() => setShakeBanner(false), 400);
       return;
     }
     setActiveTab(tabId);
@@ -170,11 +173,7 @@ export default function ProfileTabs({
 
   return (
     <div className="flex flex-col md:flex-row w-full h-full relative font-sans overflow-y-auto md:overflow-hidden bg-background-light">
-      {/* 
- ========================================================
- MOBILE TOP BAR
- ======================================================== 
- */}
+      { }
       <div className="md:hidden flex items-center justify-between w-full bg-background-elevated border-b border-white/5 px-6 py-4 z-30 sticky top-0">
         <button
           onClick={() => setIsDrawerOpen(true)}
@@ -201,22 +200,18 @@ export default function ProfileTabs({
         </button>
       </div>
 
-      {/* Mobile Drawer Overlay */}
+      { }
       <div
         className={`fixed inset-0 bg-black/80 z-40 backdrop-blur-sm transition-opacity duration-300 md:hidden ${isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={() => setIsDrawerOpen(false)}
       />
 
-      {/* 
- ========================================================
- RESPONSIVE SIDEBAR (DRAWER ON MOBILE)
- ======================================================== 
- */}
+      { }
       <div
-        className={`fixed inset-y-0 left-0 z-50 md:z-auto md:relative w-[280px] shrink-0 h-full bg-background-elevated border-r border-white/5 flex flex-col pt-12 overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${isDrawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`fixed inset-y-0 left-0 z-50 md:z-auto md:relative w-[280px] shrink-0 h-full bg-[#050505] md:bg-transparent md:border-r border-white/5 flex flex-col pt-12 overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${isDrawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         <div className="px-8 flex flex-col gap-8 pb-12">
-          {/* User Info */}
+          { }
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-background-light flex items-center justify-center shrink-0">
@@ -240,7 +235,7 @@ export default function ProfileTabs({
               </div>
             </div>
 
-            {/* Mobile Close Button inside Drawer */}
+            { }
             <button
               onClick={() => setIsDrawerOpen(false)}
               className="md:hidden p-2 text-white/50 hover:text-white transition-colors bg-white/5 rounded-full"
@@ -249,7 +244,7 @@ export default function ProfileTabs({
             </button>
           </div>
 
-          {/* Navigation Links */}
+          { }
           <div className="flex flex-col gap-1 mt-2">
             <h3 className="text-[#888888] text-[11px] font-bold tracking-[0.15em] uppercase px-4 mb-3">
               Collection
@@ -257,11 +252,10 @@ export default function ProfileTabs({
 
             <button
               onClick={() => handleTabClick("liked")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                activeTab === "liked"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "liked"
                   ? "bg-background-light text-white"
                   : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
-              }`}
+                }`}
             >
               <Heart
                 className={`w-4 h-4 ${activeTab === "liked" ? "text-accent" : ""}`}
@@ -271,16 +265,28 @@ export default function ProfileTabs({
 
             <button
               onClick={() => handleTabClick("watch_later")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                activeTab === "watch_later"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "watch_later"
                   ? "bg-background-light text-white"
                   : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
-              }`}
+                }`}
             >
               <Bookmark
                 className={`w-4 h-4 ${activeTab === "watch_later" ? "text-accent" : ""}`}
               />
               Watch Later
+            </button>
+
+            <button
+              onClick={() => handleTabClick("history")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "history"
+                  ? "bg-background-light text-white"
+                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                }`}
+            >
+              <History
+                className={`w-4 h-4 ${activeTab === "history" ? "text-accent" : ""}`}
+              />
+              History
             </button>
 
             <div className="my-3 border-t border-white/5"></div>
@@ -291,11 +297,10 @@ export default function ProfileTabs({
 
             <button
               onClick={() => handleTabClick("my_account")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                activeTab === "my_account"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "my_account"
                   ? "bg-background-light text-white"
                   : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
-              }`}
+                }`}
             >
               <UserIcon
                 className={`w-4 h-4 ${activeTab === "my_account" ? "text-accent" : ""}`}
@@ -305,11 +310,10 @@ export default function ProfileTabs({
 
             <button
               onClick={() => handleTabClick("appearance")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                activeTab === "appearance"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "appearance"
                   ? "bg-background-light text-white"
                   : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
-              }`}
+                }`}
             >
               <Palette
                 className={`w-4 h-4 ${activeTab === "appearance" ? "text-accent" : ""}`}
@@ -319,11 +323,10 @@ export default function ProfileTabs({
 
             <button
               onClick={() => handleTabClick("devices")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                activeTab === "devices"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "devices"
                   ? "bg-background-light text-white"
                   : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
-              }`}
+                }`}
             >
               <MonitorSmartphone
                 className={`w-4 h-4 ${activeTab === "devices" ? "text-accent" : ""}`}
@@ -348,14 +351,10 @@ export default function ProfileTabs({
         </div>
       </div>
 
-      {/* 
- ========================================================
- RIGHT MAIN CONTENT
- ======================================================== 
- */}
+      { }
       <div className="flex-1 h-auto md:h-full bg-background-light overflow-visible md:overflow-y-auto custom-scrollbar relative flex justify-center lg:justify-start">
         <div className="w-full max-w-[1300px] p-6 pt-10 md:p-16 lg:pl-24 pb-32">
-          {/* Liked Tab */}
+          { }
           {activeTab === "liked" && (
             <div className="animate-in fade-in duration-300">
               <h2 className="text-white text-2xl font-bold tracking-wide mb-8">
@@ -368,7 +367,7 @@ export default function ProfileTabs({
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-32 text-[#888888] w-full text-center bg-background-elevated rounded-2xl border border-white/5 shadow-lg">
+                <div className="flex flex-col items-center justify-center py-32 text-[#888888] w-full text-center rounded-2xl border border-white/5">
                   <Heart className="w-12 h-12 mb-6 opacity-20" />
                   <p className="text-[15px] font-bold tracking-widest uppercase text-white/70">
                     No titles liked
@@ -381,7 +380,7 @@ export default function ProfileTabs({
             </div>
           )}
 
-          {/* Watch Later Tab */}
+          { }
           {activeTab === "watch_later" && (
             <div className="animate-in fade-in duration-300">
               <h2 className="text-white text-2xl font-bold tracking-wide mb-8">
@@ -394,7 +393,7 @@ export default function ProfileTabs({
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-32 text-[#888888] w-full text-center bg-background-elevated rounded-2xl border border-white/5 shadow-lg">
+                <div className="flex flex-col items-center justify-center py-32 text-[#888888] w-full text-center rounded-2xl border border-white/5">
                   <Bookmark className="w-12 h-12 mb-6 opacity-20" />
                   <p className="text-[15px] font-bold tracking-widest uppercase text-white/70">
                     No titles saved
@@ -407,7 +406,12 @@ export default function ProfileTabs({
             </div>
           )}
 
-          {/* My Account Tab */}
+          {/* HISTORY */}
+          {activeTab === "history" && (
+            <AdvancedHistoryTab initialHistory={history} />
+          )}
+
+          { }
           {activeTab === "my_account" && (
             <div className="animate-in fade-in duration-300">
               <h2 className="text-white text-2xl font-bold tracking-wide mb-8">
@@ -415,15 +419,17 @@ export default function ProfileTabs({
               </h2>
 
               <div className="flex flex-col xl:flex-row gap-8 xl:gap-12 w-full">
-                {/* Left Column (Profile & Password) */}
+                { }
                 <div className="flex-1 flex flex-col gap-6 md:gap-10 max-w-3xl">
-                  {/* Account Info */}
-                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
+                  { }
+                  <div className="w-full flex flex-col gap-6 py-6 border-b border-white/5">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-6">
                       Profile Details
                     </h3>
 
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-8">
+                      <AvatarUpload user={user} />
+                      
                       <div>
                         <label className="block text-[#EAE8E3] text-[13px] font-semibold mb-2">
                           Username
@@ -447,14 +453,14 @@ export default function ProfileTabs({
                           type="email"
                           defaultValue={user.email}
                           disabled
-                          className="w-full bg-background-light border border-white/5 rounded-lg px-4 py-3.5 text-[#EAE8E3] focus:outline-none opacity-50 cursor-not-allowed font-medium text-[15px]"
+                          className="w-full bg-transparent border border-white/5 rounded-lg px-4 py-3.5 text-[#EAE8E3] focus:outline-none opacity-50 cursor-not-allowed font-medium text-[15px]"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Password & Authentication */}
-                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
+                  { }
+                  <div className="w-full flex flex-col gap-6 py-6 border-b border-white/5">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-2">
                       Password & Authentication
                     </h3>
@@ -474,7 +480,7 @@ export default function ProfileTabs({
                           </p>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setIsPasswordModalOpen(true)}
                         className="w-full sm:w-auto px-5 py-2.5 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[13px] transition-colors active:scale-95 shrink-0"
                       >
@@ -484,9 +490,9 @@ export default function ProfileTabs({
                   </div>
                 </div>
 
-                {/* Right Column (Connected Accounts) */}
+                { }
                 <div className="w-full xl:w-[420px] shrink-0">
-                  <div className="w-full bg-background-elevated border border-white/5 p-5 md:p-8 rounded-2xl shadow-lg">
+                  <div className="w-full flex flex-col gap-6 py-6">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-2">
                       Connected Accounts
                     </h3>
@@ -495,7 +501,7 @@ export default function ProfileTabs({
                     </p>
 
                     <div className="flex flex-col gap-4">
-                      {/* Google */}
+                      { }
                       <div className="flex items-center justify-between p-5 bg-background-light rounded-xl border border-white/5">
                         <div className="flex items-center gap-4">
                           <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24">
@@ -532,7 +538,7 @@ export default function ProfileTabs({
                               } as any);
                               router.refresh();
                             }}
-                            className="px-5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg font-semibold text-[13px] transition-colors shrink-0"
+                            className="px-5 py-2.5 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-lg font-semibold text-[13px] transition-colors shrink-0"
                           >
                             Disconnect
                           </button>
@@ -544,14 +550,14 @@ export default function ProfileTabs({
                                 callbackURL: "/me",
                               })
                             }
-                            className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold text-[13px] transition-colors shrink-0"
+                            className="px-5 py-2.5 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[13px] transition-colors shrink-0"
                           >
                             Connect
                           </button>
                         )}
                       </div>
 
-                      {/* Discord */}
+                      { }
                       <div className="flex items-center justify-between p-5 bg-background-light rounded-xl border border-white/5">
                         <div className="flex items-center gap-4">
                           <svg
@@ -577,7 +583,7 @@ export default function ProfileTabs({
                               } as any);
                               router.refresh();
                             }}
-                            className="px-5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg font-semibold text-[13px] transition-colors shrink-0"
+                            className="px-5 py-2.5 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-lg font-semibold text-[13px] transition-colors shrink-0"
                           >
                             Disconnect
                           </button>
@@ -589,7 +595,7 @@ export default function ProfileTabs({
                                 callbackURL: "/me",
                               })
                             }
-                            className="px-5 py-2.5 bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/20 rounded-lg font-semibold text-[13px] transition-colors shrink-0"
+                            className="px-5 py-2.5 bg-accent hover:brightness-110 text-accent-foreground rounded-lg font-semibold text-[13px] transition-colors shrink-0"
                           >
                             Connect
                           </button>
@@ -602,7 +608,7 @@ export default function ProfileTabs({
             </div>
           )}
 
-          {/* Appearance Tab */}
+          { }
           {activeTab === "appearance" && (
             <div className="animate-in fade-in duration-300 flex flex-col gap-8 max-w-3xl w-full">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
@@ -632,8 +638,8 @@ export default function ProfileTabs({
                 className="flex flex-col gap-8 w-full opacity-100 transition-opacity"
                 style={{ opacity: isSavingAppearance ? 0.5 : 1 }}
               >
-                {/* Accent Color Section */}
-                <div className="w-full bg-background-elevated border border-white/5 p-5 sm:p-8 rounded-2xl shadow-lg">
+                { }
+                <div className="w-full flex flex-col gap-6 py-6 border-b border-white/5">
                   <div className="flex flex-col mb-6 sm:mb-8 text-center sm:text-left">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-1">
                       Accent Color
@@ -668,9 +674,9 @@ export default function ProfileTabs({
                               setPendingPreferences((prev) => ({
                                 ...(prev ||
                                   preferences || {
-                                    accentColor: "#fc535a",
-                                    filmGrain: true,
-                                  }),
+                                  accentColor: "#fc535a",
+                                  filmGrain: true,
+                                }),
                                 accentColor: theme.color,
                               }));
                             }}
@@ -691,12 +697,11 @@ export default function ProfileTabs({
                       );
                     })}
 
-                    {/* Custom Color Picker */}
+                    { }
                     <div className="flex flex-col items-center gap-3 w-16 group relative">
                       <button
                         onClick={() => setShowColorPicker(true)}
-                        className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 overflow-hidden ${
-                          ![
+                        className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 overflow-hidden ${![
                             "#fc535a",
                             "#4f83cc",
                             "#509e77",
@@ -710,7 +715,7 @@ export default function ProfileTabs({
                           )
                             ? "ring-2 ring-white scale-110 shadow-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]"
                             : "ring-1 ring-white/10 group-hover:ring-white/40 group-hover:scale-105 bg-background-light"
-                        }`}
+                          }`}
                         style={{
                           background: ![
                             "#fc535a",
@@ -747,8 +752,7 @@ export default function ProfileTabs({
                         )}
                       </button>
                       <span
-                        className={`text-[9px] font-bold tracking-wider text-center uppercase leading-tight transition-colors ${
-                          ![
+                        className={`text-[9px] font-bold tracking-wider text-center uppercase leading-tight transition-colors ${![
                             "#fc535a",
                             "#4f83cc",
                             "#509e77",
@@ -762,12 +766,12 @@ export default function ProfileTabs({
                           )
                             ? "text-white"
                             : "text-[#555555] group-hover:text-[#888888]"
-                        }`}
+                          }`}
                       >
                         Custom
                       </span>
 
-                      {/* React-Colorful Popover */}
+                      { }
                       {showColorPicker && (
                         <>
                           <div
@@ -781,10 +785,10 @@ export default function ProfileTabs({
                                 setPendingPreferences((prev) => ({
                                   ...(prev ||
                                     preferences || {
-                                      accentColor: "#fc535a",
-                                      filmGrain: true,
-                                      themeStyle: "dark",
-                                    }),
+                                    accentColor: "#fc535a",
+                                    filmGrain: true,
+                                    themeStyle: "dark",
+                                  }),
                                   accentColor: color,
                                 }));
                               }}
@@ -806,8 +810,8 @@ export default function ProfileTabs({
                   </div>
                 </div>
 
-                {/* Background Theme Section */}
-                <div className="w-full bg-background-elevated border border-white/5 p-5 sm:p-8 rounded-2xl shadow-lg">
+                { }
+                <div className="w-full flex flex-col gap-6 py-6 border-b border-white/5">
                   <div className="flex flex-col mb-6 sm:mb-8 text-center sm:text-left">
                     <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-1">
                       Background Theme
@@ -851,10 +855,10 @@ export default function ProfileTabs({
                             setPendingPreferences((prev) => ({
                               ...(prev ||
                                 preferences || {
-                                  accentColor: "#fc535a",
-                                  filmGrain: true,
-                                  themeStyle: "dark",
-                                }),
+                                accentColor: "#fc535a",
+                                filmGrain: true,
+                                themeStyle: "dark",
+                              }),
                               themeStyle: bg.id,
                             }));
                           }}
@@ -864,7 +868,7 @@ export default function ProfileTabs({
                             className="w-full h-24 rounded-lg overflow-hidden border border-white/10 flex flex-col shadow-inner shadow-black/20"
                             style={{ backgroundColor: bg.base }}
                           >
-                            {/* Header */}
+                            { }
                             <div
                               className="w-full h-5 border-b border-white/5 flex items-center px-2.5 gap-1 shrink-0"
                               style={{ backgroundColor: bg.elevated }}
@@ -873,14 +877,14 @@ export default function ProfileTabs({
                               <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                               <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                             </div>
-                            {/* Content */}
+                            { }
                             <div className="flex-1 p-2 flex gap-2">
-                              {/* Sidebar */}
+                              { }
                               <div
                                 className="w-1/3 h-full rounded-md border border-white/5"
                                 style={{ backgroundColor: bg.light }}
                               />
-                              {/* Main Content Area */}
+                              { }
                               <div className="flex-1 flex flex-col gap-1.5 pt-1">
                                 <div className="w-full h-2 rounded-[2px] bg-white/10" />
                                 <div className="w-3/4 h-2 rounded-[2px] bg-white/5" />
@@ -901,8 +905,8 @@ export default function ProfileTabs({
                   </div>
                 </div>
 
-                {/* Visual Effects Section */}
-                <div className="w-full bg-background-elevated border border-white/5 p-5 sm:p-8 rounded-2xl shadow-lg">
+                { }
+                <div className="w-full flex flex-col gap-6 py-6">
                   <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-5 sm:mb-6 text-center sm:text-left">
                     Visual Effects
                   </h3>
@@ -922,16 +926,16 @@ export default function ProfileTabs({
                       </div>
                     </div>
 
-                    {/* Toggle Switch */}
+                    { }
                     <button
                       disabled={isSavingAppearance}
                       onClick={() => {
                         setPendingPreferences((prev) => ({
                           ...(prev ||
                             preferences || {
-                              accentColor: "#fc535a",
-                              filmGrain: true,
-                            }),
+                            accentColor: "#fc535a",
+                            filmGrain: true,
+                          }),
                           filmGrain: !currentPrefs.filmGrain,
                         }));
                       }}
@@ -947,7 +951,7 @@ export default function ProfileTabs({
             </div>
           )}
 
-          {/* Devices Tab */}
+          { }
           {activeTab === "devices" && (
             <div className="animate-in fade-in duration-300 flex flex-col gap-8 max-w-3xl">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-6">
@@ -981,7 +985,7 @@ export default function ProfileTabs({
                   return (
                     <div
                       key={s.id}
-                      className={`flex items-center justify-between p-5 rounded-2xl border ${isCurrent ? "bg-background-light border-accent/20 shadow-lg" : "bg-background-elevated border-white/5"}`}
+                      className={`flex items-center justify-between p-5 rounded-2xl border ${isCurrent ? "bg-white/5 border-accent/20 shadow-lg" : "bg-transparent border-white/5"}`}
                     >
                       <div className="flex items-center gap-5">
                         <div
@@ -1022,7 +1026,7 @@ export default function ProfileTabs({
                 })}
               </div>
 
-              <div className="bg-background-elevated border border-rose-500/20 p-6 rounded-2xl flex items-start gap-4 mt-2">
+              <div className="border border-rose-500/20 p-6 rounded-2xl flex items-start gap-4 mt-2">
                 <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                 <p className="text-[#888888] text-[14px] leading-relaxed">
                   If you see a device you don't recognize, you can log it out by
@@ -1096,7 +1100,7 @@ export default function ProfileTabs({
                   // Optimistically apply and hide banner instantly
                   setPendingPreferences(null);
                   setIsSavingAppearance(true);
-                  
+
                   updateUserPreferences(prefsToSave)
                     .then(() => {
                       router.refresh();
@@ -1123,9 +1127,9 @@ export default function ProfileTabs({
       </div>
 
       {/* Modals */}
-      <UpdatePasswordModal 
-        isOpen={isPasswordModalOpen} 
-        onClose={() => setIsPasswordModalOpen(false)} 
+      <UpdatePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
         email={user.email}
       />
     </div>

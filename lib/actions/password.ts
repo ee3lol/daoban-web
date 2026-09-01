@@ -10,9 +10,6 @@ import crypto from "crypto";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-/**
- * Check if the currently authenticated user has a password set.
- */
 export async function checkHasPassword() {
   try {
     const session = await auth.api.getSession({
@@ -23,7 +20,6 @@ export async function checkHasPassword() {
       return { success: false, error: "Unauthorized" };
     }
 
-    // Check if the user has an account record with a password
     const userAccount = await db.query.account.findFirst({
       where: and(
         eq(account.userId, session.user.id),
@@ -38,9 +34,6 @@ export async function checkHasPassword() {
   }
 }
 
-/**
- * Generates a 6-digit OTP, stores it in the verification table, and emails it.
- */
 export async function requestPasswordOTP() {
   try {
     const session = await auth.api.getSession({
@@ -51,18 +44,14 @@ export async function requestPasswordOTP() {
       return { success: false, error: "Unauthorized" };
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const identifier = `password_set_${session.user.id}`;
-    
-    // Expires in 15 minutes
+
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    // Delete any existing OTP for this user
     await db.delete(verification).where(eq(verification.identifier, identifier));
 
-    // Store new OTP
     await db.insert(verification).values({
       id: crypto.randomUUID(),
       identifier,
@@ -70,7 +59,6 @@ export async function requestPasswordOTP() {
       expiresAt,
     });
 
-    // Send email via Resend
     await resend.emails.send({
       from: 'DAOBAN <noreply@daoban.lol>',
       to: session.user.email,
@@ -153,9 +141,6 @@ export async function requestPasswordOTP() {
   }
 }
 
-/**
- * Verifies the OTP and sets the password using auth.api.setPassword.
- */
 export async function verifyAndSetPassword(otp: string, newPassword: string) {
   try {
     const reqHeaders = await headers();
@@ -169,7 +154,6 @@ export async function verifyAndSetPassword(otp: string, newPassword: string) {
 
     const identifier = `password_set_${session.user.id}`;
 
-    // Fetch the OTP record
     const otpRecord = await db.query.verification.findFirst({
       where: and(
         eq(verification.identifier, identifier),
@@ -185,7 +169,6 @@ export async function verifyAndSetPassword(otp: string, newPassword: string) {
       return { success: false, error: "Verification code has expired" };
     }
 
-    // Set the password using better-auth server API
     await auth.api.setPassword({
       headers: reqHeaders,
       body: {
@@ -193,12 +176,10 @@ export async function verifyAndSetPassword(otp: string, newPassword: string) {
       },
     });
 
-    // Revoke all other sessions
     await auth.api.revokeOtherSessions({
       headers: reqHeaders,
     });
 
-    // Clean up OTP
     await db.delete(verification).where(eq(verification.id, otpRecord.id));
 
     return { success: true };

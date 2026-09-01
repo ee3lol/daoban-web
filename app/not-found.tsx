@@ -4,7 +4,7 @@ import Image from 'next/image';
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full bg-background flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background Image */}
+      {}
       <div className="absolute inset-0 z-0">
         <Image
           src="/sunken-ship.png"
@@ -17,7 +17,7 @@ export default function NotFound() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/50 via-transparent to-transparent" />
       </div>
 
-      {/* Content */}
+      {}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mt-20">
         <h1 className="text-[120px] md:text-[180px] font-black text-accent leading-none tracking-tighter opacity-90 drop-shadow-2xl">
           404

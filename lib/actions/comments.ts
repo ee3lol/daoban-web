@@ -21,8 +21,7 @@ export async function getComments(mediaId: number, mediaType: string, season?: n
       conditions.push(isNull(comments.season));
       conditions.push(isNull(comments.episode));
     }
-    
-    // Only fetch top-level comments initially
+
     conditions.push(isNull(comments.parentId));
 
     const session = await auth.api.getSession({
@@ -70,7 +69,7 @@ export async function getComments(mediaId: number, mediaType: string, season?: n
         likesCount,
         dislikesCount,
         userLikeStatus: userLike ? (userLike.isLike ? 'like' : 'dislike') : null,
-        likes: undefined, // remove raw likes array
+        likes: undefined, 
         replies: c.replies ? c.replies.map(formatComment) : []
       };
     };
@@ -126,7 +125,6 @@ export async function deleteComment(commentId: string) {
       return { success: false, error: "Unauthorized" };
     }
 
-    // Verify ownership
     const comment = await db.query.comments.findFirst({
       where: eq(comments.id, commentId)
     });
@@ -164,18 +162,18 @@ export async function toggleCommentLike(commentId: string, isLike: boolean) {
 
     if (existingLike) {
       if (existingLike.isLike === isLike) {
-        // User clicked the same button, remove the like/dislike
+        
         await db.delete(commentLikes).where(eq(commentLikes.id, existingLike.id));
         return { success: true, action: 'removed' };
       } else {
-        // User switched from like to dislike or vice versa
+        
         await db.update(commentLikes)
           .set({ isLike })
           .where(eq(commentLikes.id, existingLike.id));
         return { success: true, action: 'updated' };
       }
     } else {
-      // New like/dislike
+      
       await db.insert(commentLikes).values({
         id: crypto.randomUUID(),
         userId,

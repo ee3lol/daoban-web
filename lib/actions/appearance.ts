@@ -25,7 +25,7 @@ export const getUserPreferences = cache(async () => {
     .limit(1);
 
   if (prefs.length === 0) {
-    // Return defaults if no preferences exist
+    
     return {
       accentColor: '#fc535a',
       themeStyle: 'dark',

@@ -10,7 +10,6 @@ export default function SetUsernameModal({ user }: { user: any }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // If the user has already set their username or is not logged in, don't show the modal
   if (!user || user.hasSetUsername) return null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -21,7 +20,7 @@ export default function SetUsernameModal({ user }: { user: any }) {
     setLoading(true);
 
     try {
-      // Check if username is available
+      
       const { data: isAvailable } = await authClient.isUsernameAvailable({
         username: username.trim(),
       });
@@ -32,10 +31,9 @@ export default function SetUsernameModal({ user }: { user: any }) {
         return;
       }
 
-      // Update the user
       const { error: updateError } = await authClient.updateUser({
         username: username.trim(),
-        // @ts-ignore: custom field
+        
         hasSetUsername: true,
       });
 
@@ -53,10 +51,10 @@ export default function SetUsernameModal({ user }: { user: any }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      {/* Soft backdrop */}
+      {}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
-      {/* Modal Container */}
+      {}
       <div
         className="relative w-full max-w-[420px] rounded-[24px] p-7 sm:p-8 flex flex-col gap-6"
         style={{

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,24 +22,23 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
     { label: 'ANIME', href: '/anime' },
     { label: 'MOVIES', href: '/movies' },
     { label: 'TV SHOWS', href: '/tv' },
-    { label: 'ABOUT', href: '/about' }
+    { label: 'SOCIAL', href: '/social' }
   ];
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    handleScroll(); // Check on mount
+    handleScroll(); 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Reset navigation state when pathname changes
   useEffect(() => {
     setIsNavigatingToMe(false);
   }, [pathname]);
 
-  if (pathname.startsWith('/watch') || pathname.startsWith('/me')) return null;
+  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends')) return null;
 
   const glassStyle = {
     background: 'rgba(255, 255, 255, 0.03)',
@@ -51,14 +50,12 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
 
   return (
     <>
-      {/* =========================================
-          MOBILE NAVIGATION (Top Bar + Bottom Tabs) 
-          ========================================= */}
+      {}
       
-      {/* Mobile Top Gradient Fade (protects logo legibility when scrolling over images) */}
+      {}
       <div className="md:hidden fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#151515] via-[#151515]/70 to-transparent pointer-events-none z-40" />
 
-      {/* Mobile Top Bar - Just the Logo */}
+      {}
       <div className="md:hidden fixed top-6 left-0 right-0 z-[100] flex items-center justify-center pointer-events-none">
         <Link href="/" className="flex items-center gap-3 pointer-events-auto">
           <span className="text-[#EAE8E3] font-semibold text-[16px] tracking-[0.15em] drop-shadow-md">DAOBAN</span>
@@ -67,10 +64,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </Link>
       </div>
 
-      {/* Mobile Bottom Tab Bar & Popup Menu */}
+      {}
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-[100] flex flex-col items-center">
         
-        {/* Browse Dropdown Panel */}
+        {}
         <div 
           className={`absolute bottom-[calc(100%+16px)] left-0 right-0 py-4 rounded-[20px] flex flex-col items-center gap-4 transition-all duration-300 origin-bottom ${
             isMobileMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
@@ -140,9 +137,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </nav>
       </div>
 
-      {/* =========================================
-          DESKTOP NAVIGATION (Floating Top Bar)
-          ========================================= */}
+      {}
       <div className="hidden md:flex fixed top-8 left-0 right-0 z-50 justify-center px-6 pointer-events-none">
         <nav 
           className={`flex items-center justify-between w-full max-w-5xl px-8 py-4 rounded-[16px] transition-all duration-500 relative border pointer-events-auto ${
@@ -151,31 +146,31 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
               : 'bg-transparent border-transparent'
           }`}
         >
-          {/* Brand */}
+          {}
           <Link 
             href="/" 
             className="flex items-center gap-4 group relative"
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
-              setTooltipArrowX(Math.max(15, Math.min(x, 260))); // Clamp between 15px and 260px
+              setTooltipArrowX(Math.max(15, Math.min(x, 260))); 
             }}
           >
             <span className="text-[#EAE8E3] font-semibold text-lg tracking-[0.15em] transition-colors">DAOBAN</span>
             <span className="text-[#888888]/30 text-sm">|</span>
             <span className="text-accent text-[15px] font-medium transition-colors">盗版</span>
 
-            {/* Desktop Tooltip (Meaning of Name / About Us) */}
+            {}
             <div className="absolute top-full mt-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-[500ms] pointer-events-none z-50 translate-y-2 group-hover:translate-y-0">
               
-              {/* Tooltip Caret / Arrow */}
+              {}
               <div 
                 className="absolute -top-[6px] w-3 h-3 bg-[rgba(21,21,21,0.95)] border-t border-l border-[rgba(255,255,255,0.08)] transform rotate-45 z-10 backdrop-blur-xl transition-all duration-75 ease-out" 
                 style={{ left: `${tooltipArrowX}px` }}
               />
 
               <div className="bg-[rgba(21,21,21,0.95)] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-5 rounded-[16px] w-[280px] flex flex-col gap-2 relative overflow-hidden mt-0">
-                {/* Subtle top highlight */}
+                {}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
                 
                 <div className="flex items-center gap-2">
@@ -192,7 +187,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             </div>
           </Link>
 
-          {/* Links */}
+          {}
           <div className="flex items-center gap-10">
             {navLinks.map((item) => {
               const isActive = pathname.startsWith(item.href);
@@ -214,7 +209,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             })}
           </div>
 
-          {/* Actions */}
+          {}
           <div className="flex items-center gap-5">
             <button 
               onClick={() => setIsSearchOpen(true)}
@@ -254,10 +249,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </nav>
       </div>
 
-      {/* Auth Modal Overlay */}
+      {}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       
-      {/* Search Modal Overlay */}
+      {}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );

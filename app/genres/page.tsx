@@ -32,10 +32,10 @@ export default async function GenresPage({
             href={`/genres/${genre.id}?name=${encodeURIComponent(genre.name)}&type=${currentTab}`}
             className="group relative h-32 md:h-40 rounded-2xl overflow-hidden border border-white/5 bg-[#1a1a1a] flex items-center justify-center shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-white/10"
           >
-            {/* Background Gradient */}
+            {}
             <div className="absolute inset-0 bg-gradient-to-br from-[#151515] to-[#222222] opacity-80 group-hover:opacity-40 transition-opacity duration-300" />
             
-            {/* Hover Glow */}
+            {}
             <div className="absolute inset-0 bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
             
             <h2 className="relative z-10 text-[#EAE8E3] font-bold text-lg md:text-xl tracking-widest uppercase group-hover:text-white transition-colors">

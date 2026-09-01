@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -55,8 +55,8 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   useEffect(() => {
     if (!movies || movies.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % Math.min(movies.length, 5)); // Cycle through top 5
-    }, 8000); // Slide every 8 seconds
+      setCurrentIndex((prev) => (prev + 1) % Math.min(movies.length, 5)); 
+    }, 8000); 
     return () => clearInterval(interval);
   }, [movies]);
 
@@ -78,8 +78,8 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
     : null;
 
   return (
-    <div className="relative w-full h-[85vh] min-h-[600px] flex items-center overflow-hidden">
-      {/* Background Images with Crossfade and Ken Burns Zoom */}
+    <div className="relative w-full h-[85vh] min-h-[450px] flex items-center overflow-hidden">
+      {}
       {movies.slice(0, 5).map((movie, idx) => (
         <div
           key={movie.id}
@@ -95,18 +95,18 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
         </div>
       ))}
 
-      {/* Gradients to fade into background */}
+      {}
       <div className="absolute inset-[-2px] z-10" style={{ backgroundImage: 'linear-gradient(to top, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 60%, transparent) 50%, transparent 100%)' }} />
       <div className="absolute inset-[-2px] z-10" style={{ backgroundImage: 'linear-gradient(to right, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 40%, transparent 100%)' }} />
 
-      {/* Content */}
-      <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-20">
+      {}
+      <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-10 md:mt-20">
         <div className="max-w-2xl flex flex-col gap-5 transform transition-all duration-700 translate-y-0 opacity-100">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#EAE8E3] tracking-tighter leading-[1.1] drop-shadow-2xl uppercase">
             {title}
           </h1>
 
-          {/* Metadata Row */}
+          {}
           <div className="flex items-center gap-3 text-[12px] sm:text-[13px] font-medium text-[#888888] flex-wrap mt-1">
             {currentMovie.vote_average ? (
               <div className="flex items-center gap-1.5">
@@ -155,7 +155,7 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
         </div>
       </div>
 
-      {/* Carousel Indicators */}
+      {}
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex gap-3">
         {movies.slice(0, 5).map((_, idx) => (
           <button

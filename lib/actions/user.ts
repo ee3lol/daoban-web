@@ -130,14 +130,14 @@ export async function getUserSessions() {
         location = 'Local Machine';
       } else {
         try {
-          // Use ip-api for free IP geolocation
+          
           const res = await fetch(`http://ip-api.com/json/${session.ipAddress}`);
           const data = await res.json();
           if (data.status === 'success') {
             location = `${data.city}, ${data.countryCode}`;
           }
         } catch (e) {
-          // Fallback to unknown if API fails
+          
         }
       }
     }
@@ -162,10 +162,6 @@ export async function revokeOtherSessions(currentSessionId: string) {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  // Delete all sessions EXCEPT the current one
-  // Drizzle doesn't have a simple 'neq' operator out of the box in some versions without importing 'ne', 
-  // so we can use a raw SQL approach or import `ne`
-  // Actually, let's just fetch all, filter out the current one, and delete by ID.
   const sessions = await db.select().from(sessionTable).where(eq(sessionTable.userId, user.id));
   const otherSessions = sessions.filter(s => s.id !== currentSessionId);
   

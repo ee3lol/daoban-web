@@ -26,6 +26,7 @@ export default function FriendsManager({
   activeTab: string;
 }) {
   const router = useRouter();
+  const [tab, setTab] = useState(activeTab || "online");
   const [searchUsername, setSearchUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
@@ -77,11 +78,45 @@ export default function FriendsManager({
     if (res.success) router.refresh();
   };
 
-  const tab = activeTab || "all";
-
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-      {/* Header */}
+    <div className="flex-1 flex flex-col h-full bg-transparent text-white">
+      {/* DAOBAN-style Top Navigation Bar */}
+      <div className="flex items-center justify-center pt-8 pb-4 bg-transparent w-full">
+        <div className="flex items-center bg-[rgba(255,255,255,0.03)] border border-white/5 rounded-full p-1.5 shadow-inner backdrop-blur-md">
+          <button 
+            onClick={() => setTab("online")}
+            className={`px-6 py-2.5 rounded-full text-[11px] tracking-widest font-bold uppercase transition-all ${tab === "online" ? "bg-white/10 text-white shadow-md" : "text-[#888888] hover:text-white"}`}
+          >
+            Online
+          </button>
+          <button 
+            onClick={() => setTab("all")}
+            className={`px-6 py-2.5 rounded-full text-[11px] tracking-widest font-bold uppercase transition-all ${tab === "all" ? "bg-white/10 text-white shadow-md" : "text-[#888888] hover:text-white"}`}
+          >
+            All
+          </button>
+          <button 
+            onClick={() => setTab("pending")}
+            className={`px-6 py-2.5 rounded-full text-[11px] tracking-widest font-bold uppercase transition-all flex items-center gap-2 ${tab === "pending" ? "bg-white/10 text-white shadow-md" : "text-[#888888] hover:text-white"}`}
+          >
+            Pending
+            {data?.pendingIncoming?.length > 0 && (
+              <span className="w-5 h-5 bg-accent text-white rounded-full flex items-center justify-center text-[10px] shadow-[0_0_10px_rgba(252,83,90,0.4)]">
+                {data.pendingIncoming.length}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => setTab("add")}
+            className={`px-6 py-2.5 rounded-full text-[11px] tracking-widest font-bold uppercase transition-all ml-2 ${tab === "add" ? "bg-accent text-accent-foreground" : "bg-transparent text-accent hover:bg-accent/10 border border-accent/20"}`}
+          >
+            Add Friend
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-10 pb-10">
       <div className="mb-8 border-b border-[rgba(255,255,255,0.05)] pb-6">
         <h1 className="text-2xl font-bold text-ivory tracking-wider uppercase">
           {tab === "all" && "All Friends"}
@@ -95,7 +130,6 @@ export default function FriendsManager({
         </p>
       </div>
 
-      {/* Add Friend View */}
       {tab === "add" && (
         <div className="max-w-md">
           <form onSubmit={handleSendRequest} className="flex flex-col gap-4">
@@ -136,10 +170,10 @@ export default function FriendsManager({
         </div>
       )}
 
-      {/* Pending Requests View */}
+      {}
       {tab === "pending" && (
         <div className="flex flex-col gap-8">
-          {/* Incoming */}
+          {}
           <div>
             <h2 className="text-xs font-bold text-[#888888] uppercase tracking-[0.2em] mb-4">
               Incoming Requests ({data?.pendingIncoming?.length || 0})
@@ -195,7 +229,7 @@ export default function FriendsManager({
             )}
           </div>
 
-          {/* Outgoing */}
+          {}
           <div>
             <h2 className="text-xs font-bold text-[#888888] uppercase tracking-[0.2em] mb-4">
               Outgoing Requests ({data?.pendingOutgoing?.length || 0})
@@ -246,7 +280,7 @@ export default function FriendsManager({
         </div>
       )}
 
-      {/* All Friends View */}
+      {}
       {tab === "all" && (
         <div>
           {data?.accepted?.filter((r: any) => !optimisticRemoved.includes(r.requestId)).length === 0 ? (
@@ -308,6 +342,7 @@ export default function FriendsManager({
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

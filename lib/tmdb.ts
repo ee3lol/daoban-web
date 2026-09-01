@@ -1,23 +1,14 @@
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-
-function getHeaders() {
-  const token = process.env.TMDB_READ_ACCESS_TOKEN;
-  if (!token) {
-    console.warn('TMDB_READ_ACCESS_TOKEN is missing from .env.local');
-  }
-  return {
-    accept: 'application/json',
-    Authorization: `Bearer ${token}`
-  };
-}
+const TMDB_BASE_URL = process.env.TMDB_PROXY_URL || 'http://localhost:3001';
 
 async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
   const res = await fetch(url.toString(), {
-    headers: getHeaders(),
-    next: { revalidate: 3600 } // Cache for 1 hour to keep it fast
+    headers: {
+      accept: 'application/json',
+    },
+    next: { revalidate: 3600 } 
   });
 
   if (!res.ok) {
@@ -28,7 +19,6 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
   return res.json();
 }
 
-// Utility to get image URLs
 export function getTMDBImageUrl(path: string, size: 'w500' | 'original' = 'original') {
   if (!path) return '';
   return `https://image.tmdb.org/t/p/${size}${path}`;
@@ -43,7 +33,7 @@ export async function getPopularMovies() {
 }
 
 export async function getPopularAnime() {
-  // Animation genre ID is 16. Using discover API.
+  
   return fetchFromTMDB('/discover/tv', {
     with_genres: '16',
     with_original_language: 'ja',
@@ -55,13 +45,12 @@ export async function getTopRated() {
   return fetchFromTMDB('/movie/top_rated');
 }
 
-// Anime
 export async function getTopRatedAnime() {
   return fetchFromTMDB('/discover/tv', { with_genres: '16', with_original_language: 'ja', sort_by: 'vote_average.desc', 'vote_count.gte': '500' });
 }
 
 export async function getAiringAnime() {
-  // Rough approximation of currently airing anime
+  
   return fetchFromTMDB('/discover/tv', { 
     with_genres: '16', 
     with_original_language: 'ja', 
@@ -70,7 +59,6 @@ export async function getAiringAnime() {
   });
 }
 
-// Movies
 export async function getNowPlayingMovies() {
   return fetchFromTMDB('/movie/now_playing');
 }
@@ -79,7 +67,6 @@ export async function getUpcomingMovies() {
   return fetchFromTMDB('/movie/upcoming');
 }
 
-// TV
 export async function getPopularTV() {
   return fetchFromTMDB('/tv/popular');
 }
@@ -92,7 +79,6 @@ export async function getAiringTodayTV() {
   return fetchFromTMDB('/tv/airing_today');
 }
 
-// Genres
 export async function getMovieGenres() {
   return fetchFromTMDB('/genre/movie/list');
 }

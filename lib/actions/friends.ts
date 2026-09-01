@@ -27,7 +27,7 @@ export async function sendFriendRequest(targetUsername: string) {
   }
 
   try {
-    // 1. Find the target user
+    
     const targetUsers = await db.select().from(user).where(eq(user.username, targetUsername));
     const targetUser = targetUsers[0];
 
@@ -35,7 +35,6 @@ export async function sendFriendRequest(targetUsername: string) {
       return { success: false, error: 'User not found' };
     }
 
-    // 2. Check if a relationship already exists (either direction)
     const existingRelationship = await db
       .select()
       .from(friends)
@@ -49,14 +48,13 @@ export async function sendFriendRequest(targetUsername: string) {
     if (existingRelationship.length > 0) {
       const rel = existingRelationship[0];
       if (rel.status === 'accepted') return { success: false, error: 'You are already friends' };
-      if (rel.status === 'blocked') return { success: false, error: 'User not found' }; // Mask blocks
+      if (rel.status === 'blocked') return { success: false, error: 'User not found' }; 
       if (rel.status === 'pending') {
         if (rel.senderId === currentUser.id) return { success: false, error: 'Request already sent' };
         if (rel.receiverId === currentUser.id) return { success: false, error: 'This user already sent you a request. Check your pending requests.' };
       }
       if (rel.status === 'declined') {
-        // If it was declined, we can potentially recreate or update the status
-        // For simplicity, we just update the existing row to pending, reversing sender/receiver if needed
+
         await db.update(friends)
           .set({ status: 'pending', senderId: currentUser.id, receiverId: targetUser.id, updatedAt: new Date() })
           .where(eq(friends.id, rel.id));
@@ -64,7 +62,6 @@ export async function sendFriendRequest(targetUsername: string) {
       }
     }
 
-    // 3. Create the new friend request
     await db.insert(friends).values({
       id: generateId(),
       senderId: currentUser.id,
@@ -120,7 +117,6 @@ export async function declineFriendRequest(requestId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // We just delete it so they can request again in future, or we can mark as declined. Deleting is simpler.
     await db.delete(friends).where(eq(friends.id, requestId));
 
     return { success: true };
@@ -135,8 +131,7 @@ export async function removeFriend(friendId: string) {
   if (!currentUser) return { success: false, error: 'Not authenticated' };
 
   try {
-    // friendId here is the userId of the friend, not the relationship ID
-    // So we find the relationship and delete it
+
     const existingRelationship = await db
       .select()
       .from(friends)
@@ -161,7 +156,6 @@ export async function removeFriend(friendId: string) {
   }
 }
 
-// Fetch all friend data for the current user
 export async function getFriendData() {
   const currentUser = await getCurrentUser();
   if (!currentUser) return null;
@@ -177,7 +171,6 @@ export async function getFriendData() {
         )
       );
 
-    // Get user details for all involved IDs
     const userIds = new Set<string>();
     allRelationships.forEach(r => {
       if (r.senderId !== currentUser.id) userIds.add(r.senderId);
@@ -192,8 +185,7 @@ export async function getFriendData() {
         username: user.username,
         image: user.image,
       }).from(user);
-      
-      // Filter memory side since Drizzle 'inArray' is sometimes tricky, or just do simple array
+
       const relevantUsers = users.filter(u => userIds.has(u.id));
       usersInfo = relevantUsers.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
     }

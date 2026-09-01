@@ -77,7 +77,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           password: formData.get("password") as string,
           name: formData.get("username") as string,
           username: formData.get("username") as string,
-          // @ts-ignore: custom field
+          
           hasSetUsername: true,
         });
         if (error) {
@@ -89,8 +89,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           setTimeout(() => {
             onClose();
             setSuccessMsg(null);
-            setIsLogin(true); // Switch to login tab after registration
-          }, 3000); // Give them time to read the message
+            setIsLogin(true); 
+          }, 3000); 
         }
       }
     } catch {
@@ -120,14 +120,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Soft backdrop */}
+      {}
       <div
         className="absolute inset-0 transition-opacity duration-500"
         style={{ background: "rgba(0, 0, 0, 0.45)" }}
         onClick={onClose}
       />
 
-      {/* Modal Container */}
+      {}
       <div
         className="relative w-full max-w-[420px] rounded-[24px] p-7 sm:p-8 transition-all duration-500 flex flex-col gap-6 transform scale-100 opacity-100"
         style={{
@@ -157,7 +157,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           {!isForgotPassword && (
             <>
-              {/* Sliding Toggle */}
+              {}
           <div className="relative flex w-full p-1 bg-[rgba(255,255,255,0.02)] rounded-[16px] border border-[rgba(255,255,255,0.04)] shadow-inner">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-[12px] bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.04)] shadow-sm transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -196,7 +196,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           </div>
 
-          {/* Social Login Buttons */}
+          {}
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -246,7 +246,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           </div>
 
-          {/* Divider */}
+          {}
           <div className="flex items-center gap-4">
             <div className="flex-1 h-px bg-white/[0.06]" />
             <span className="text-[11px] font-medium text-[#888888] uppercase tracking-[0.15em]">
@@ -270,7 +270,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Username (only on Register) */}
+            {}
             {!isLogin && !isForgotPassword && (
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-bold text-[#888888] uppercase tracking-[0.2em] ml-1">

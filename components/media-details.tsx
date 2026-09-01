@@ -14,7 +14,11 @@ import {
   Info,
   ChevronLeft,
   Plus,
-  ListVideo,
+  ArrowLeft,
+  BookmarkPlus,
+  Check,
+  MonitorPlay,
+  X,
   Volume2,
   VolumeX,
   LayoutGrid,
@@ -22,17 +26,23 @@ import {
   Bookmark,
   Heart,
   Share2,
+  ListVideo,
+  PartyPopper,
 } from "lucide-react";
+import WatchPartyModal from "./watch-party-modal";
+import { authClient } from "@/lib/auth-client";
+import { getFriendData } from "@/lib/actions/friends";
+import { useSocket } from "./socket-provider";
 import ContentSection from "./content-section";
 import CommentsSection from "./comments-section";
 import ShareModal from "./share-modal";
 import { fetchTVSeason } from "@/lib/actions/tmdb";
+import { getWatchHistoryByMedia } from "@/lib/actions/history";
 import {
   toggleWatchLater,
   toggleFavorite,
   checkMediaSaved,
 } from "@/lib/actions/user";
-import { authClient } from "@/lib/auth-client";
 
 interface MediaDetailsProps {
   item: any;
@@ -49,9 +59,11 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const overviewRef = useRef<HTMLParagraphElement>(null);
   const { data: session } = authClient.useSession();
+  const { socket, isConnected } = useSocket();
+  const [presenceState, setPresenceState] = useState<Record<string, { watching: string | null }>>({});
 
   useEffect(() => {
-    // Set the share URL once mounted
+    
     setShareUrl(window.location.href);
   }, []);
 
@@ -68,12 +80,50 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
+  const [episodeProgress, setEpisodeProgress] = useState<Record<number, any>>({});
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
   
   const [showTitleToggle, setShowTitleToggle] = useState(false);
   const [showOverviewToggle, setShowOverviewToggle] = useState(false);
+  
+  const [showSimilars, setShowSimilars] = useState(false);
+  
+  const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
+  const [onlineFriends, setOnlineFriends] = useState<any[]>([]);
 
   const [isVideoReady, setIsVideoReady] = useState(false);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    // Fetch initial state immediately
+    socket.emit("get_presence", (state: any) => {
+      setPresenceState(state);
+    });
+
+    const handlePresence = (state: Record<string, { watching: string | null }>) => {
+      setPresenceState(state);
+    };
+    socket.on("presence_sync", handlePresence);
+    return () => {
+      socket.off("presence_sync", handlePresence);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (isPartyModalOpen && session?.user) {
+      getFriendData().then(data => {
+        if (data?.accepted) {
+          const formatted = data.accepted.map((f: any) => ({
+            id: f.user.id,
+            name: f.user.username || f.user.name,
+            image: f.user.image,
+          })).filter((f: any) => presenceState[f.id]); // Only those online
+          setOnlineFriends(formatted);
+        }
+      });
+    }
+  }, [isPartyModalOpen, session?.user, presenceState]);
 
   const title = item?.title || item?.name;
 
@@ -87,7 +137,6 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
       }
     };
 
-    // Small delay to ensure styles and fonts are applied
     const timeoutId = setTimeout(checkTruncation, 100);
     window.addEventListener("resize", checkTruncation);
     return () => {
@@ -123,8 +172,21 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
 
     async function loadSeason() {
       setIsEpisodesLoading(true);
-      const data = await fetchTVSeason(item.id, selectedSeason);
+      const [data, historyRes] = await Promise.all([
+        fetchTVSeason(item.id, selectedSeason),
+        getWatchHistoryByMedia(item.id, type)
+      ]);
       setSeasonData(data);
+      
+      const historyMap: Record<number, any> = {};
+      if (historyRes && historyRes.length > 0) {
+        historyRes.forEach((h: any) => {
+          if (h.season === selectedSeason && h.episode) {
+            historyMap[h.episode] = h;
+          }
+        });
+      }
+      setEpisodeProgress(historyMap);
       setIsEpisodesLoading(false);
     }
     loadSeason();
@@ -147,26 +209,26 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const handleToggleWatchLater = async () => {
     if (!session?.user) return;
     const previousState = isWatchLater;
-    setIsWatchLater(!previousState); // Optimistic update
+    setIsWatchLater(!previousState); 
 
     const res = await toggleWatchLater(item.id, type, title, item.poster_path);
     if (res.success) {
       setIsWatchLater(res.added ?? false);
     } else {
-      setIsWatchLater(previousState); // Revert on failure
+      setIsWatchLater(previousState); 
     }
   };
 
   const handleToggleFavorite = async () => {
     if (!session?.user) return;
     const previousState = isFavorite;
-    setIsFavorite(!previousState); // Optimistic update
+    setIsFavorite(!previousState); 
 
     const res = await toggleFavorite(item.id, type, title, item.poster_path);
     if (res.success) {
       setIsFavorite(res.added ?? false);
     } else {
-      setIsFavorite(previousState); // Revert on failure
+      setIsFavorite(previousState); 
     }
   };
 
@@ -178,7 +240,6 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   const runtime =
     item.runtime || (item.episode_run_time && item.episode_run_time[0]);
 
-  // Format runtime
   const formattedRuntime = runtime
     ? `${Math.floor(runtime / 60)}h ${runtime % 60}m`
     : "";
@@ -188,11 +249,11 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
 
   return (
     <main className="min-h-screen bg-background-light pb-20">
-      {/* Advanced Cinematic Hero Section */}
-      <div className="relative w-full h-[75vh] min-h-[500px] max-h-[800px] flex items-center overflow-hidden">
-        {/* Background Layer */}
+      {}
+      <div className="relative w-full h-[75vh] min-h-[400px] max-h-[800px] flex items-center overflow-hidden">
+        {}
         <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none">
-          {/* Always show static backdrop immediately, fade out when video is ready */}
+          {}
           <Image
             src={getTMDBImageUrl(item.backdrop_path, "original")}
             alt={title}
@@ -201,10 +262,10 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
             className={`object-cover scale-105 transition-opacity duration-300 ease-in-out ${trailer && isVideoReady ? "opacity-0" : "opacity-60"}`}
           />
 
-          {/* Overlay YouTube Video, fade in after UI hides */}
+          {}
           {trailer && (
             <div
-              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[56.25vw] min-w-[177.77vh] min-h-[100vh] scale-[1.15] pointer-events-none transition-opacity duration-300 ease-in-out ${isVideoReady ? "opacity-70" : "opacity-0"}`}
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[56.25vw] min-w-[177.77vh] min-h-[100vh] scale-[1.15] pointer-events-none transition-opacity duration-300 ease-in-out hidden md:block ${isVideoReady ? "opacity-70" : "opacity-0"}`}
             >
               <iframe
                 ref={iframeRef}
@@ -216,22 +277,22 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
             </div>
           )}
 
-          {/* Cinematic Gradients */}
+          {}
           <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to top, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 50%, transparent 100%)' }} />
           <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to right, var(--bg-light) 0%, color-mix(in srgb, var(--bg-light) 80%, transparent) 40%, transparent 100%)' }} />
           <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to left, color-mix(in srgb, var(--bg-light) 40%, transparent) 0%, transparent 100%)' }} />
         </div>
 
-        {/* Floating Go Back Button */}
+        {}
         <button
           onClick={() => router.back()}
-          className="absolute top-24 left-6 md:left-12 z-30 flex items-center gap-2 text-white/50 hover:text-white transition-colors w-fit text-[10px] font-bold tracking-[0.3em] uppercase drop-shadow-md"
+          className="absolute top-16 md:top-24 left-6 md:left-12 z-30 flex items-center gap-2 text-white/50 hover:text-white transition-colors w-fit text-[10px] font-bold tracking-[0.3em] uppercase drop-shadow-md"
         >
           <ChevronLeft className="w-4 h-4" />
           Go Back
         </button>
 
-        {/* Floating Mute Button */}
+        {}
         {trailer && mounted && (
           <button
             onClick={toggleMute}
@@ -245,8 +306,8 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           </button>
         )}
 
-        {/* Hero Content */}
-        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-20">
+        {}
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-10 md:mt-20">
           <div className="max-w-2xl flex flex-col gap-5 transform transition-all duration-700 translate-y-0 opacity-100">
             <h1 
               ref={titleRef}
@@ -255,7 +316,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
               {title}
             </h1>
 
-            {/* Metadata Row */}
+            {}
             <div className="flex items-center gap-3 text-[12px] sm:text-[13px] font-medium text-[#888888] flex-wrap mt-1">
               {item.vote_average ? (
                 <div className="flex items-center gap-1.5">
@@ -305,9 +366,9 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
               </button>
             )}
 
-            {/* Action Buttons Row */}
+            {}
             <div className="flex flex-col sm:flex-row items-center sm:items-start w-full gap-4 mt-6">
-              {/* Primary Action */}
+              {}
               <Link
                 href={`/watch/${type}/${item.id}`}
                 className="w-full sm:w-auto shrink-0 group flex items-center justify-center gap-3 px-8 py-3.5 sm:py-4 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[13px] tracking-widest transition-all duration-300 active:scale-95 whitespace-nowrap"
@@ -316,9 +377,9 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                 PLAY
               </Link>
 
-              {/* Secondary Icon Buttons */}
+              {}
               <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start overflow-x-auto hide-scrollbar">
-                {/* Watch Later */}
+                {}
                 <button
                   title="Watch Later"
                   disabled={!session?.user}
@@ -334,7 +395,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   <Bookmark className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110 ${isWatchLater ? "fill-current text-white" : ""}`} />
                 </button>
 
-                {/* Favorite */}
+                {}
                 <button
                   title="Favorite"
                   disabled={!session?.user}
@@ -350,7 +411,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110 ${isFavorite ? "fill-current text-accent" : ""}`} />
                 </button>
 
-                {/* Share */}
+                {}
                 <button
                   title="Share"
                   onClick={() => setIsShareModalOpen(true)}
@@ -359,7 +420,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   <Share2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
                 </button>
 
-                {/* Episodes (TV Only) */}
+                {}
                 {type !== "movie" && (
                   <button
                     title="Episodes"
@@ -370,23 +431,46 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   </button>
                 )}
 
-                {/* Similars */}
-                <button
-                  title="Similars"
-                  onClick={() => document.getElementById("similars-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
-                >
-                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
-                </button>
+                {}
+                  <button
+                    title="Similars"
+                    onClick={() => document.getElementById("similars-section")?.scrollIntoView({ behavior: "smooth" })}
+                    className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
+                  >
+                    <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+                  </button>
+                  
+                  {session?.user && (
+                    <button
+                      title="Host Watch Party"
+                      onClick={() => setIsPartyModalOpen(true)}
+                      className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-full bg-white/5 hover:bg-accent/10 border border-white/10 hover:border-accent/40 text-foreground hover:text-accent transition-all duration-300 backdrop-blur-md active:scale-95 group"
+                    >
+                      <PartyPopper className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+                    </button>
+                  )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content Layout */}
+      {session?.user && (
+        <WatchPartyModal
+          isOpen={isPartyModalOpen}
+          onClose={() => setIsPartyModalOpen(false)}
+          mediaId={item.id.toString()}
+          mediaType={type}
+          mediaTitle={item.title || item.name}
+          hostId={session.user.id}
+          hostName={session.user.name}
+          onlineFriends={onlineFriends}
+        />
+      )}
+
+      {}
       <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-12 relative z-20 flex flex-col gap-0 md:gap-4">
-        {/* Episodes Section */}
+        {}
         {type !== "movie" && (
           <div id="episodes-section" className="scroll-mt-32">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b border-white/5 pb-4">
@@ -400,7 +484,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                 Episodes
               </button>
 
-              {/* Seasons Dropdown */}
+              {}
               {isEpisodesVisible && (
                 <div className="relative z-20">
                   <button
@@ -452,58 +536,87 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                 </div>
               ) : seasonData?.episodes?.length > 0 ? (
                 <div className="flex flex-col gap-4">
-                  {seasonData.episodes.map((ep: any) => (
-                    <Link
-                      key={ep.id}
-                      href={`/watch/${type}/${item.id}`}
-                      className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-2xl border border-white/5 bg-black/20 hover:bg-white/5 transition-all duration-300 group"
-                    >
-                      {/* Thumbnail */}
-                      <div className="w-full sm:w-[240px] shrink-0 aspect-video rounded-xl overflow-hidden bg-black/50 border border-white/5 relative">
-                        {ep.still_path ? (
-                          <Image
-                            src={getTMDBImageUrl(ep.still_path, "w500")}
-                            alt={ep.name}
-                            fill
-                            sizes="(max-width: 640px) 100vw, 240px"
-                            className="object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/20 bg-black/50">
-                            <LayoutGrid className="w-8 h-8" />
+                  {seasonData.episodes.map((ep: any) => {
+                    const epHistory = episodeProgress[ep.episode_number];
+                    const progressPercentage = epHistory && epHistory.duration > 0 
+                      ? (epHistory.progress / epHistory.duration) * 100 
+                      : 0;
+
+                    const timeText = (progressPercentage > 0 && progressPercentage < 95 && epHistory?.duration > 0)
+                      ? `${Math.floor(epHistory.progress / 60)}m / ${Math.floor(epHistory.duration / 60)}m`
+                      : ep.runtime ? `${ep.runtime}m` : null;
+
+                    return (
+                      <Link
+                        key={ep.id}
+                        href={`/watch/${type}/${item.id}?season=${selectedSeason}&episode=${ep.episode_number}`}
+                        className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-2xl border border-white/5 bg-black/20 hover:bg-white/5 transition-all duration-300 group"
+                      >
+                        {}
+                        <div className="w-full sm:w-[240px] shrink-0 aspect-video rounded-xl overflow-hidden bg-black/50 border border-white/5 relative">
+                          {ep.still_path ? (
+                            <Image
+                              src={getTMDBImageUrl(ep.still_path, "w500")}
+                              alt={ep.name}
+                              fill
+                              sizes="(max-width: 640px) 100vw, 240px"
+                              className="object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/20 bg-black/50">
+                              <LayoutGrid className="w-8 h-8" />
+                            </div>
+                          )}
+
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                            <div className="w-12 h-12 rounded-full bg-accent/90 text-accent-foreground flex items-center justify-center shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-300">
+                              <Play className="w-5 h-5 ml-1 fill-current" />
+                            </div>
                           </div>
-                        )}
+                          
+                          {}
+                          {timeText && (
+                            <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[10px] font-bold tracking-wider text-white uppercase z-10 shadow-lg">
+                              {timeText}
+                            </div>
+                          )}
 
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
-                          <div className="w-12 h-12 rounded-full bg-accent/90 text-accent-foreground flex items-center justify-center shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-300">
-                            <Play className="w-5 h-5 ml-1 fill-current" />
+                          {}
+                          {progressPercentage > 0 && progressPercentage < 95 && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 backdrop-blur-sm">
+                              <div 
+                                className="h-full bg-accent transition-all duration-500"
+                                style={{ width: `${Math.min(100, progressPercentage)}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {}
+                        <div className="flex flex-col justify-center flex-1 py-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <span className="text-2xl font-black text-white/20 group-hover:text-accent transition-colors">
+                              {ep.episode_number.toString().padStart(2, "0")}
+                            </span>
+                            <div className="flex flex-col">
+                              <h4 className="text-[#EAE8E3] text-sm md:text-base font-bold leading-tight group-hover:text-white transition-colors">
+                                {ep.name}
+                              </h4>
+                            </div>
+                          </div>
+                          <p className="text-white/40 text-xs md:text-[13px] line-clamp-3 leading-relaxed">
+                            {ep.overview || "No overview available."}
+                          </p>
+
+                          <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2">
+                            <span className="text-[10px] tracking-[0.2em] text-accent uppercase font-bold flex items-center gap-1.5">
+                              <Play className="w-3 h-3 fill-current" /> Play Episode
+                            </span>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex flex-col justify-center flex-1 py-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <span className="text-2xl font-black text-white/20 group-hover:text-accent transition-colors">
-                            {ep.episode_number.toString().padStart(2, "0")}
-                          </span>
-                          <h4 className="text-[#EAE8E3] text-sm md:text-base font-bold leading-tight group-hover:text-white transition-colors">
-                            {ep.name}
-                          </h4>
-                        </div>
-                        <p className="text-white/40 text-xs md:text-[13px] line-clamp-3 leading-relaxed">
-                          {ep.overview || "No overview available."}
-                        </p>
-
-                        <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2">
-                          <span className="text-[10px] tracking-[0.2em] text-accent uppercase font-bold flex items-center gap-1.5">
-                            <Play className="w-3 h-3 fill-current" /> Play
-                            Episode
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center justify-center p-12 bg-white/5 border border-white/10 rounded-2xl gap-3 text-white/50">
@@ -516,7 +629,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           </div>
         )}
 
-        {/* Cast Section */}
+        {}
         {cast.length > 0 && (
           <section className="relative">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mb-8 relative z-20">
@@ -535,7 +648,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                   className="flex flex-col gap-3 group cursor-pointer shrink-0 w-[80px] md:w-[120px] items-center text-center snap-start"
                 >
                   <div className="w-[80px] h-[80px] md:w-[120px] md:h-[120px] rounded-full overflow-hidden bg-black/50 border-2 border-transparent group-hover:border-accent transition-all duration-300 shrink-0 shadow-lg p-1">
-                    <div className="w-full h-full rounded-full overflow-hidden">
+                    <div className="w-full h-full rounded-full overflow-hidden relative">
                       {actor.profile_path ? (
                         <Image
                           src={getTMDBImageUrl(actor.profile_path, "w500")}
@@ -565,14 +678,14 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           </section>
         )}
 
-        {/* Similar Titles */}
+        {}
         {similar.length > 0 && (
           <div id="similar-section" className="scroll-mt-32 mb-16 -mx-6 md:-mx-12">
             <ContentSection title="Similar Titles" items={similar} />
           </div>
         )}
 
-        {/* Comments Section */}
+        {}
         <section className="relative mb-16">
           <div className="flex items-center w-full sm:w-auto mb-8 relative z-20">
             <h2 className="text-[#EAE8E3] text-[13px] sm:text-[15px] font-bold tracking-[0.2em] uppercase whitespace-nowrap">

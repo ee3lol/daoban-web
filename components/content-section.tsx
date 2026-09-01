@@ -34,7 +34,7 @@ export default function ContentSection({ title, items, showRank, rightElement }:
   };
 
   useEffect(() => {
-    handleScroll(); // Initial check
+    handleScroll(); 
   }, [items]);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -55,7 +55,7 @@ export default function ContentSection({ title, items, showRank, rightElement }:
           <div className="h-[1px] flex-1 bg-gradient-to-r from-[#888888]/20 to-transparent ml-4 sm:mx-6" />
         </div>
         
-        {/* Actions & Scroll Navigation */}
+        {}
         <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 w-full sm:w-auto">
           {rightElement}
           <div className="hidden sm:flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function ContentSection({ title, items, showRank, rightElement }:
         </div>
       </div>
       
-      {/* Horizontal Scroll Snap Container */}
+      {}
       <div className="w-full relative transition-all duration-300">
         <div 
           ref={scrollRef}

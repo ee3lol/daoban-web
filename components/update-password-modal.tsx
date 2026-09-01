@@ -16,23 +16,20 @@ export default function UpdatePasswordModal({ isOpen, onClose, email }: UpdatePa
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
-  
-  // States for Flow A (Change Password)
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
-  // States for Flow B (Set Password via OTP)
+
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  
-  // Shared States
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Reset state when modal opens
+      
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -155,7 +152,7 @@ export default function UpdatePasswordModal({ isOpen, onClose, email }: UpdatePa
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           className="relative w-full max-w-md bg-background-elevated border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
         >
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between p-6 border-b border-white/5 bg-background-light/50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
@@ -190,7 +187,7 @@ export default function UpdatePasswordModal({ isOpen, onClose, email }: UpdatePa
                 </p>
               </div>
             ) : hasPassword ? (
-              /* Flow A: Change Existing Password */
+              
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="flex flex-col gap-2 relative">
                   <div className="flex justify-between items-center">
@@ -278,7 +275,7 @@ export default function UpdatePasswordModal({ isOpen, onClose, email }: UpdatePa
                 </button>
               </form>
             ) : (
-              /* Flow B: Set Password via OTP */
+              
               <div className="space-y-4">
                 {!otpSent ? (
                   <div className="flex flex-col items-center text-center py-6">

@@ -1,6 +1,12 @@
 import HeroCarousel from '@/components/hero-carousel';
 import ContentSection from '@/components/content-section';
 import { getPopularTV, getTopRatedTV, getAiringTodayTV } from '@/lib/tmdb';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "TV Shows",
+  description: "binge the latest and greatest tv shows. no bs, just streaming.",
+};
 
 export default async function TVPage() {
   const [popularData, topRatedData, airingData] = await Promise.all([

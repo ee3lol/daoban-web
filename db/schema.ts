@@ -143,3 +143,87 @@ export const commentLikesRelations = relations(commentLikes, ({ one }) => ({
   }),
 }));
 
+export const watchHistory = pgTable('watch_history', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  mediaId: integer('media_id').notNull(),
+  mediaType: text('media_type').notNull(),
+  season: integer('season'),
+  episode: integer('episode'),
+  progress: integer('progress').notNull().default(0), // Progress in seconds
+  duration: integer('duration').notNull().default(0), // Total duration in seconds
+  title: text('title').notNull(),
+  posterPath: text('poster_path'),
+  backdropPath: text('backdrop_path'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const watchHistoryRelations = relations(watchHistory, ({ one }) => ({
+  user: one(user, {
+    fields: [watchHistory.userId],
+    references: [user.id],
+  }),
+}));
+
+// ===== Social App Tables =====
+
+export const conversations = pgTable('conversations', {
+  id: text('id').primaryKey(),
+  isGroup: boolean('is_group').notNull().default(false),
+  name: text('name'),
+  lastMessageAt: timestamp('last_message_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const conversationParticipants = pgTable('conversation_participants', {
+  id: text('id').primaryKey(),
+  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  hasUnread: boolean('has_unread').notNull().default(false),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+});
+
+export const messages = pgTable('messages', {
+  id: text('id').primaryKey(),
+  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const messageReactions = pgTable('message_reactions', {
+  id: text('id').primaryKey(),
+  messageId: text('message_id').notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  emoji: text('emoji').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const socialRelations = relations(conversations, ({ many }) => ({
+  participants: many(conversationParticipants),
+  messages: many(messages),
+}));
+
+export const messageRelations = relations(messages, ({ one, many }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(user, {
+    fields: [messages.senderId],
+    references: [user.id],
+  }),
+  reactions: many(messageReactions),
+}));
+
+export const messageReactionsRelations = relations(messageReactions, ({ one }) => ({
+  message: one(messages, {
+    fields: [messageReactions.messageId],
+    references: [messages.id],
+  }),
+  user: one(user, {
+    fields: [messageReactions.userId],
+    references: [user.id],
+  }),
+}));

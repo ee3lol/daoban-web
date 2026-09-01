@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { getTMDBImageUrl } from '@/lib/tmdb';
@@ -26,12 +26,11 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const year = (item.release_date || item.first_air_date || '').split('-')[0];
 
-  // Determine routing type
   let type = item.title ? 'movie' : 'tv';
   if (item.media_type) {
     type = item.media_type;
   }
-  // If it's a TV show, check if it's anime
+  
   if (type === 'tv' && (item as any).original_language === 'ja' && (item as any).genre_ids?.includes(16)) {
     type = 'anime';
   }
@@ -41,7 +40,7 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
       href={`/${type}/${item.id}`}
       className="group relative w-full aspect-[2/3] block rounded-[12px] overflow-hidden cursor-pointer shrink-0 snap-start bg-[#1a1a1a] shadow-lg"
     >
-      {/* Poster Image */}
+      {}
       <Image
         src={getTMDBImageUrl(item.poster_path, 'w500')}
         alt={title!}
@@ -50,17 +49,17 @@ export default function MediaCard({ item, rank }: { item: Movie, rank?: number }
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
       />
 
-      {/* Stronger Bottom Gradient for text legibility */}
+      {}
       <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
 
-      {/* Minimalist Glass Ribbon */}
+      {}
       {rank !== undefined && rank <= 10 && (
         <div className="absolute top-0 left-3 z-30 w-7 h-9 bg-black/40 backdrop-blur-md border border-white/10 border-t-0 flex items-end justify-center pb-1.5 shadow-md pointer-events-none rounded-b-[6px]">
           <span className="font-bold text-[13px] text-accent leading-none">{rank}</span>
         </div>
       )}
 
-      {/* Content overlay */}
+      {}
       <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 flex flex-col justify-end z-20">
         <div className="flex flex-col gap-1 sm:gap-1.5">
           <h3 className="text-[#EAE8E3] font-bold text-[12px] sm:text-[14px] line-clamp-2 leading-snug drop-shadow-xl">

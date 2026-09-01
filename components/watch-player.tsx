@@ -1,39 +1,140 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MdArrowBack, MdGridView, MdClose, MdPlaylistPlay, MdChatBubbleOutline, MdPlayArrow } from 'react-icons/md';
 import { fetchTVSeason } from '@/lib/actions/tmdb';
 import { fetchVideoSources } from '@/lib/actions/video';
+import { getMediaProgress, updateWatchHistory } from '@/lib/actions/history';
 import { getTMDBImageUrl } from '@/lib/tmdb';
+import { useSocket } from '@/components/socket-provider';
 import CustomVideoPlayer from './custom-video-player';
 import CommentsSection from './comments-section';
 import { authClient } from '@/lib/auth-client';
-import { ArrowLeft } from 'lucide-react';
+import PartyChat from './party-chat';
+import { ArrowLeft, Users } from 'lucide-react';
+import Image from 'next/image';
+
+const MemoizedCustomVideoPlayer = React.memo(CustomVideoPlayer);
+const MemoizedCommentsSection = React.memo(CommentsSection);
 
 interface WatchPlayerProps {
   item: any;
   type: 'movie' | 'tv' | 'anime';
+  defaultSeason?: number;
+  defaultEpisode?: number;
 }
 
-export default function WatchPlayer({ item, type }: WatchPlayerProps) {
+export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode }: WatchPlayerProps) {
   const router = useRouter();
   const { data: session } = authClient.useSession();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'episodes' | 'comments'>(type === 'movie' ? 'comments' : 'episodes');
+  const [activeTab, setActiveTab] = useState<'episodes' | 'comments' | 'party'>(type === 'movie' ? 'comments' : 'episodes');
 
-  const initialSeason = item?.seasons?.find((s: any) => s.season_number > 0)?.season_number || 1;
+  const initialSeason = defaultSeason || item?.seasons?.find((s: any) => s.season_number > 0)?.season_number || 1;
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState(defaultEpisode || 1);
   const [seasonData, setSeasonData] = useState<any>(null);
   const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false);
 
   const [videoSources, setVideoSources] = useState<any[]>([]);
   const [isSourcesLoading, setIsSourcesLoading] = useState(true);
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
+  const [initialTime, setInitialTime] = useState(0);
 
-  // Load TV Season Data
+  const { socket, isConnected } = useSocket();
+  const searchParams = useSearchParams();
+  const partyId = searchParams.get("party");
+  
+  const [isInParty, setIsInParty] = useState(false);
+  const [partyError, setPartyError] = useState<string | null>(null);
+  const [partyPassword, setPartyPassword] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [partyHostId, setPartyHostId] = useState<string | null>(null);
+  const [partyMembers, setPartyMembers] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    if (isConnected && socket && partyId && session?.user && !isInParty) {
+      socket.emit("join_party", {
+        partyId,
+        userId: session.user.id,
+        userName: session.user.name || session.user.username || "Guest",
+        password: partyPassword || undefined
+      }, (res: any) => {
+        if (res.success) {
+          setIsInParty(true);
+          setNeedsPassword(false);
+          setPartyError(null);
+          setPartyHostId(res.hostId);
+          setPartyMembers(res.members || []);
+        } else {
+          if (res.error === "Invalid password") {
+            setNeedsPassword(true);
+          } else {
+            setPartyError(res.error);
+          }
+        }
+      });
+    }
+  }, [isConnected, socket, partyId, session?.user, partyPassword, isInParty]);
+
+  // Listen for party events (kick, end, member updates)
+  useEffect(() => {
+    if (!socket || !partyId) return;
+
+    const handleKicked = (data: any) => {
+      setIsInParty(false);
+      setPartyError(data.reason || "You were removed from the party.");
+    };
+    const handleEnded = (data: any) => {
+      setIsInParty(false);
+      setPartyError(data.reason || "The party has ended.");
+    };
+    const handleMembersUpdate = (data: any) => {
+      setPartyMembers(data.members || []);
+    };
+
+    socket.on("party_kicked", handleKicked);
+    socket.on("party_ended", handleEnded);
+    socket.on("party_members_update", handleMembersUpdate);
+
+    return () => {
+      socket.off("party_kicked", handleKicked);
+      socket.off("party_ended", handleEnded);
+      socket.off("party_members_update", handleMembersUpdate);
+    };
+  }, [socket, partyId]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (socket && isInParty) {
+        socket.emit("leave_party");
+      }
+    };
+  }, [socket, isInParty]);
+
+  useEffect(() => {
+    if (isConnected && socket) {
+      const watchingText = item?.title || item?.name || "Video";
+      console.log("Emitting presence:", watchingText);
+      socket.emit("update_presence", { watching: watchingText });
+      
+      const interval = setInterval(() => {
+        socket.emit("update_presence", { watching: watchingText });
+      }, 10000); // Re-sync every 10 seconds just in case
+      
+      return () => {
+        console.log("Clearing presence");
+        clearInterval(interval);
+        if (isConnected && socket) {
+          socket.emit("update_presence", { watching: null });
+        }
+      };
+    }
+  }, [isConnected, socket, item]);
+
   useEffect(() => {
     if (type === 'movie') return;
 
@@ -46,15 +147,20 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
     loadSeason();
   }, [selectedSeason, item.id, type]);
 
-  // Load Video Sources
   useEffect(() => {
     async function loadSources() {
       setIsSourcesLoading(true);
       setVideoSources([]);
-      const res = await fetchVideoSources(type, item.id, selectedSeason, selectedEpisode);
+      
+      const [res, progress] = await Promise.all([
+        fetchVideoSources(type, item.id, selectedSeason, selectedEpisode),
+        getMediaProgress(item.id, type, type === 'movie' ? undefined : selectedSeason, type === 'movie' ? undefined : selectedEpisode)
+      ]);
+
       if (res.success && res.sources) {
         setVideoSources(res.sources);
       }
+      setInitialTime(partyId ? 0 : (progress || 0));
       setIsSourcesLoading(false);
     }
     loadSources();
@@ -65,12 +171,12 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
   const validSeasons = item.seasons?.filter((s: any) => s.season_number > 0) || [];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-background z-50 p-2 md:p-6 flex items-center justify-center overflow-hidden">
-      <div className="relative w-full h-full bg-black rounded-xl md:rounded-[24px] border border-white/5 overflow-hidden shadow-2xl flex flex-col md:flex-row">
+    <div className="fixed inset-0 w-screen h-screen bg-background z-50 p-0 md:p-6 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-full bg-black rounded-none md:rounded-[24px] border-0 md:border md:border-white/5 overflow-hidden shadow-2xl flex flex-col md:flex-row">
 
-        {/* Main Player Area */}
+        {/* LEFT COLUMN: VIDEO PLAYER */}
         <div className="relative flex-1 h-full">
-          {/* Back Button */}
+          {/* BACK BUTTON */}
           <button
             onClick={() => router.back()}
             className="absolute top-6 left-6 z-[60] w-12 h-12 flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-white/5 rounded-full backdrop-blur-md transition-all"
@@ -79,7 +185,40 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* Sidebar Toggle Button */}
+          {/* Watch Party Setup Overlays */}
+          {partyId && !isInParty && !partyError && needsPassword && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-6">
+              <div className="bg-background-elevated border border-white/10 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center gap-4 text-center">
+                <h3 className="text-white font-bold tracking-widest uppercase">Private Party</h3>
+                <p className="text-muted text-xs">Enter the password to join this watch party.</p>
+                <input
+                  type="text"
+                  value={partyPassword}
+                  onChange={(e) => setPartyPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors text-center mt-2"
+                />
+              </div>
+            </div>
+          )}
+
+          {partyError && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-6">
+              <div className="bg-background-elevated border border-red-500/20 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center gap-4 text-center">
+                <h3 className="text-red-500 font-bold tracking-widest uppercase">Connection Failed</h3>
+                <p className="text-muted text-sm">{partyError}</p>
+                <button
+                  onClick={() => router.push(`/watch/${type}/${item.id}`)}
+                  className="mt-2 bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors"
+                >
+                  Watch Solo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Party Chat - Now integrated in sidebar */}
+
           {!isSidebarOpen && (
             <div className="absolute top-6 right-6 z-[60] flex gap-3">
               {type !== 'movie' && (
@@ -98,10 +237,18 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                 <MdChatBubbleOutline className="w-5 h-5" />
                 Discuss
               </button>
+              {isInParty && partyId && (
+                <button
+                  onClick={() => { setIsSidebarOpen(true); setActiveTab('party'); }}
+                  className="px-5 py-3 flex items-center gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-xs uppercase shadow-2xl"
+                >
+                  <Users className="w-5 h-5 text-accent" />
+                  Party
+                </button>
+              )}
             </div>
           )}
 
-          {/* Video Player Container */}
           {isSourcesLoading ? (
             <div className="w-full h-full flex items-center justify-center bg-black">
               <div className="flex flex-col items-center gap-4 text-white/50">
@@ -110,18 +257,42 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
               </div>
             </div>
           ) : (
-            <CustomVideoPlayer
+            <MemoizedCustomVideoPlayer
               sources={videoSources}
               poster={getTMDBImageUrl(item.backdrop_path || item.poster_path, 'original')}
+              initialTime={initialTime}
+              socket={socket}
+              partyId={partyId}
+              isInParty={isInParty}
+              itemTitle={item.name || item.title}
+              itemDescription={type === 'movie' ? item.overview : (seasonData?.episodes?.find((e: any) => e.episode_number === selectedEpisode)?.overview || item.overview)}
+              itemMetadata={[
+                item.vote_average ? `⭐ ${Math.round(item.vote_average * 10) / 10}` : '',
+                type === 'movie' ? 'Movie' : 'TV',
+                type === 'movie' ? '' : `S${selectedSeason} E${selectedEpisode}`,
+                (item.release_date || item.first_air_date || '').split('-')[0]
+              ].filter(Boolean).join(' • ')}
+              itemLogo={item.images?.logos?.[0]?.file_path ? `https://image.tmdb.org/t/p/w500${item.images.logos[0].file_path}` : undefined}
+              onProgress={(currentTime, duration) => {
+                updateWatchHistory({
+                  mediaId: item.id,
+                  mediaType: type,
+                  season: type === 'movie' ? undefined : selectedSeason,
+                  episode: type === 'movie' ? undefined : selectedEpisode,
+                  progress: currentTime,
+                  duration: duration,
+                  title: item.name || item.title,
+                  posterPath: item.poster_path,
+                  backdropPath: item.backdrop_path,
+                });
+              }}
             />
           )}
         </div>
 
-        {/* Custom Slide-out Sidebar */}
         <div
           className={`absolute top-0 right-0 h-full w-full sm:w-[450px] bg-[rgba(10,10,10,0.95)] backdrop-blur-3xl border-l border-white/5 z-[70] flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:relative md:translate-x-0 md:w-[400px] ${!isSidebarOpen ? 'md:hidden' : 'md:flex'}`}
         >
-          {/* Sidebar Header Tabs */}
           <div className="flex items-center justify-between p-2 border-b border-white/5 shrink-0 bg-black/20">
             <div className="flex">
               {type !== 'movie' && (
@@ -134,10 +305,18 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
               )}
               <button
                 onClick={() => setActiveTab('comments')}
-                className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'comments' ? 'text-accent border-b-2 border-accent' : 'text-[#888888] hover:text-white'}`}
+                className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'comments' ? 'text-accent border-b-2 border-accent' : 'text-muted hover:text-white'}`}
               >
-                Comments
+                Discuss
               </button>
+              {isInParty && partyId && (
+                <button
+                  onClick={() => setActiveTab('party')}
+                  className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'party' ? 'text-accent border-b-2 border-accent' : 'text-muted hover:text-white'}`}
+                >
+                  Party
+                </button>
+              )}
             </div>
 
             <button
@@ -148,13 +327,10 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
             </button>
           </div>
 
-          {/* Tab Content */}
           <div className="flex-1 overflow-hidden relative">
 
-            {/* EPISODES TAB */}
             {activeTab === 'episodes' && type !== 'movie' && (
               <div className="absolute inset-0 flex flex-col bg-black/90">
-                {/* Season Dropdown */}
                 <div className="relative px-6 py-4 border-b border-white/10 shrink-0 z-20 bg-black/40">
                   <button
                     onClick={() => setIsSeasonDropdownOpen(!isSeasonDropdownOpen)}
@@ -168,7 +344,6 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                     </div>
                   </button>
 
-                  {/* Dropdown Menu */}
                   {isSeasonDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setIsSeasonDropdownOpen(false)} />
@@ -191,7 +366,6 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                   )}
                 </div>
 
-                {/* Episodes List */}
                 <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
                   {isLoadingEpisodes ? (
                     <div className="flex-1 flex items-center justify-center">
@@ -205,7 +379,7 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                           key={ep.id}
                           onClick={() => {
                             setSelectedEpisode(ep.episode_number);
-                            // On mobile, close sidebar automatically when picking an episode
+                            
                             if (window.innerWidth < 768) setIsSidebarOpen(false);
                           }}
                           className={`relative flex items-center gap-4 px-4 py-4 text-left transition-colors border-b border-white/5 group ${isPlaying ? 'bg-white/5' : 'hover:bg-white/5'
@@ -213,10 +387,12 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                         >
                           <div className={`w-32 aspect-video shrink-0 bg-black/80 rounded overflow-hidden relative`}>
                             {ep.still_path ? (
-                              <img
+                              <Image
                                 src={getTMDBImageUrl(ep.still_path, 'w500')}
                                 alt={ep.name}
-                                className={`w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
+                                fill
+                                sizes="(max-width: 768px) 128px, 128px"
+                                className={`object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-white/20">
@@ -224,7 +400,6 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
                               </div>
                             )}
 
-                            {/* Hover / Playing Overlay */}
                             <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                               {isPlaying ? (
                                 <span className="text-[10px] font-bold tracking-widest text-white uppercase drop-shadow-md bg-black/60 px-2 py-1 rounded">Playing</span>
@@ -257,15 +432,28 @@ export default function WatchPlayer({ item, type }: WatchPlayerProps) {
               </div>
             )}
 
-            {/* COMMENTS TAB */}
+            {}
             {activeTab === 'comments' && (
               <div className="absolute inset-0 h-full">
-                <CommentsSection
+                <MemoizedCommentsSection
                   mediaId={item.id}
                   mediaType={type}
                   season={type === 'movie' ? undefined : selectedSeason}
                   episode={type === 'movie' ? undefined : selectedEpisode}
                   currentUser={session?.user}
+                />
+              </div>
+            )}
+
+            {/* Party Chat Tab */}
+            {activeTab === 'party' && isInParty && session?.user && partyId && (
+              <div className="absolute inset-0 h-full bg-background-elevated/90 backdrop-blur-md">
+                <PartyChat
+                  partyId={partyId}
+                  userId={session.user.id}
+                  userName={session.user.name || "Unknown"}
+                  hostId={partyHostId}
+                  members={partyMembers}
                 />
               </div>
             )}

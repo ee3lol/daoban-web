@@ -1,6 +1,12 @@
 import HeroCarousel from '@/components/hero-carousel';
 import ContentSection from '@/components/content-section';
 import { getPopularAnime, getTopRatedAnime, getAiringAnime } from '@/lib/tmdb';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Anime",
+  description: "stream your favorite anime for free. all the good stuff, no bs.",
+};
 
 export default async function AnimePage() {
   const [popularData, topRatedData, airingData] = await Promise.all([
@@ -16,10 +22,10 @@ export default async function AnimePage() {
   return (
     <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden bg-background-light">
       
-      {/* Hero Carousel (using top rated anime as a proxy for trending anime) */}
+      {}
       <HeroCarousel movies={topRated} />
 
-      {/* Content Grids */}
+      {}
       <div className="flex flex-col gap-4 mt-8 pb-20 relative z-20">
         <ContentSection title="Popular Anime" items={popular} />
         <ContentSection title="Airing Recently" items={airing} />
