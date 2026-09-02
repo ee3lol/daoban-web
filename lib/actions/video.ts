@@ -8,7 +8,7 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
       throw new Error("DAOBAN_API_KEY is not configured.");
     }
 
-    const baseUrl = process.env.BASE_DANBAO_API_URL || process.env.DAOBAN_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.daoban.lol' : 'http://localhost:3001');
+    const baseUrl = process.env.BASE_DAOBAN_API_URL || process.env.DAOBAN_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.daoban.lol' : 'http://localhost:3001');
     let url = `${baseUrl}/api/movie/${tmdbId}`;
     if (type === 'tv' || type === 'anime') {
       if (!season || !episode) throw new Error("Season and episode required for TV/Anime.");
@@ -23,7 +23,7 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
         'Origin': 'https://www.daoban.lol',
         'Referer': 'https://www.daoban.lol/'
       },
-      
+
       cache: 'no-store'
     });
 
@@ -37,7 +37,7 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
     }
 
     const data = await response.json();
-    return data; 
+    return data;
   } catch (error: any) {
     console.error("Error fetching video sources:", error);
     return { success: false, error: error.message || "Failed to fetch sources." };

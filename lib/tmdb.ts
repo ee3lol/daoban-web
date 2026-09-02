@@ -1,4 +1,4 @@
-const TMDB_BASE_URL = process.env.BASE_DANBAO_API_URL || 'http://localhost:3001';
+const TMDB_BASE_URL = process.env.BASE_DAOBAN_API_URL || 'http://localhost:3001';
 
 async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
