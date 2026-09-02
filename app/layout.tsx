@@ -46,13 +46,32 @@ import { getFriendData } from "@/lib/actions/friends";
 import { SocketProvider } from "@/components/socket-provider";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session = null;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } catch (error) {
+    console.error("[Better Auth] Silent catch in RootLayout:", error);
+  }
 
   const user = session?.user ?? null;
-  const prefs = await getUserPreferences();
-  const friendData = user ? await getFriendData() : null;
+  
+  let prefs = null;
+  try {
+    prefs = await getUserPreferences();
+  } catch (err) {
+    console.error("[DB] Silent catch for preferences:", err);
+  }
+  
+  let friendData = null;
+  if (user) {
+    try {
+      friendData = await getFriendData();
+    } catch (err) {
+      console.error("[DB] Silent catch for friend data:", err);
+    }
+  }
   
   const accentColor = prefs?.accentColor ?? '#fc535a';
   const showFilmGrain = prefs?.filmGrain ?? true;
