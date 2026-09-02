@@ -8,6 +8,7 @@ interface ChatMessage {
   id: string;
   userId: string;
   userName: string;
+  userImage?: string | null;
   text: string;
   timestamp: number;
 }
@@ -16,17 +17,31 @@ interface PartyChatProps {
   partyId: string;
   userId: string;
   userName: string;
+  userImage?: string | null;
   hostId?: string | null;
-  members?: { id: string; name: string }[];
+  members?: { id: string; name: string, image?: string }[];
+  partySettings?: { anyoneCanControl: boolean };
+  initialMessages?: ChatMessage[];
 }
 
-export default function PartyChat({ partyId, userId, userName, hostId, members = [] }: PartyChatProps) {
+export default function PartyChat({ partyId, userId, userName, userImage, hostId, members = [], partySettings, initialMessages = [] }: PartyChatProps) {
   const { socket, isConnected } = useSocket();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    // Add local join message on initialization only
+    return [...initialMessages, {
+      id: "local_join_" + Date.now(),
+      userId: "system",
+      userName: "System",
+      text: "You joined the party.",
+      timestamp: Date.now()
+    }];
+  });
   const [inputText, setInputText] = useState("");
   const [activeView, setActiveView] = useState<"chat" | "members">("chat");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isHost = userId === hostId;
 
@@ -41,6 +56,7 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
     };
     
     const handleUserJoined = (data: any) => {
+      if (data.userId === userId) return; // Ignore our own events
       setMessages((prev) => [...prev, {
         id: Math.random().toString(36),
         userId: "system",
@@ -51,23 +67,35 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
     };
     
     const handleUserLeft = (data: any) => {
+      if (data.userId === userId) return; // Ignore our own events
       setMessages((prev) => [...prev, {
         id: Math.random().toString(36),
         userId: "system",
         userName: "System",
-        text: `Someone left the party.`,
+        text: `${data.userName || "Someone"} left the party.`,
         timestamp: Date.now()
       }]);
+    };
+
+    const handleTyping = (data: any) => {
+      setTypingUsers((prev) => {
+        const next = new Set(prev);
+        if (data.isTyping) next.add(data.userName);
+        else next.delete(data.userName);
+        return next;
+      });
     };
 
     socket.on("party_chat_message", handleMessage);
     socket.on("party_user_joined", handleUserJoined);
     socket.on("party_user_left", handleUserLeft);
+    socket.on("party_typing", handleTyping);
 
     return () => {
       socket.off("party_chat_message", handleMessage);
       socket.off("party_user_joined", handleUserJoined);
       socket.off("party_user_left", handleUserLeft);
+      socket.off("party_typing", handleTyping);
     };
   }, [socket, isConnected, activeView]);
 
@@ -76,7 +104,19 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
       setUnreadCount(0);
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, activeView]);
+  }, [messages, activeView, typingUsers]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value);
+    if (!socket || !isConnected) return;
+    
+    socket.emit("party_typing", { partyId, userName, isTyping: e.target.value.length > 0 });
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("party_typing", { partyId, userName, isTyping: false });
+    }, 2000);
+  };
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +126,13 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
       id: Math.random().toString(36).substring(2, 9),
       userId,
       userName,
+      userImage,
       text: inputText.trim(),
       timestamp: Date.now()
     };
 
     socket.emit("party_chat_message", { partyId, ...msgData });
+    socket.emit("party_typing", { partyId, userName, isTyping: false });
     setInputText("");
   };
 
@@ -148,7 +190,14 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
                   ) : (
                     <>
                       {msg.userId !== userId && (
-                        <span className="text-[10px] text-white/40 font-bold mb-1 ml-1 flex items-center gap-1">
+                        <span className="text-[10px] text-white/40 font-bold mb-1 ml-1 flex items-center gap-1.5">
+                          {msg.userImage ? (
+                             <img src={msg.userImage} alt="" className="w-4 h-4 rounded-full object-cover border border-white/10" />
+                          ) : (
+                             <div className="w-4 h-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[8px]">
+                               {msg.userName[0]?.toUpperCase()}
+                             </div>
+                          )}
                           {msg.userId === hostId && <Crown className="w-3 h-3 text-yellow-400" />}
                           {msg.userName}
                         </span>
@@ -170,15 +219,21 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
             <div ref={messagesEndRef} />
           </div>
 
+          {typingUsers.size > 0 && (
+            <div className="px-4 py-2 text-[10px] font-medium tracking-widest text-accent/60 bg-black/10 shrink-0 italic animate-pulse">
+              {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing...
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 bg-black/30 border-t border-white/5 shrink-0">
             <form onSubmit={sendMessage} className="flex items-center gap-2">
               <input
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={handleInput}
                 placeholder="Type a message..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-accent/40 transition-colors"
+                className="flex-1 bg-[rgba(255,255,255,0.025)] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-accent/40 transition-colors"
               />
               <button
                 type="submit"
@@ -199,11 +254,15 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
             {members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors group"
+                className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[rgba(255,255,255,0.02)] border border-transparent hover:border-white/5 transition-colors group"
               >
-                <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white/80 text-sm font-bold shrink-0">
-                  {member.name[0]?.toUpperCase()}
-                </div>
+                {member.image ? (
+                   <img src={member.image} alt={member.name} className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0" />
+                ) : (
+                   <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/80 text-sm font-bold shrink-0">
+                     {member.name[0]?.toUpperCase()}
+                   </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <span className="text-white text-sm font-medium truncate flex items-center gap-2">
                     {member.name}
@@ -231,12 +290,31 @@ export default function PartyChat({ partyId, userId, userName, hostId, members =
 
           {/* Host Controls */}
           {isHost && (
-            <div className="p-4 border-t border-white/5 shrink-0">
+            <div className="p-4 border-t border-white/5 shrink-0 space-y-4">
+              <div className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.02)] rounded-xl border border-white/5">
+                <div className="flex flex-col">
+                   <span className="text-[10px] text-white font-bold uppercase tracking-widest">Anyone can control</span>
+                   <span className="text-[10px] text-white/40 italic">Like a Spotify Jam</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    socket?.emit("update_party_settings", { 
+                      partyId, 
+                      hostId: userId, 
+                      settings: { ...partySettings, anyoneCanControl: !partySettings?.anyoneCanControl }
+                    });
+                  }}
+                  className={`w-11 h-6 rounded-full relative transition-colors ${partySettings?.anyoneCanControl ? 'bg-accent' : 'bg-white/10'}`}
+                >
+                  <div className={`absolute top-[2px] bottom-[2px] w-5 rounded-full bg-white transition-all shadow-md ${partySettings?.anyoneCanControl ? 'left-[22px]' : 'left-[2px]'}`} />
+                </button>
+              </div>
+              
               <button
                 onClick={handleEndParty}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors border border-red-500/10 hover:border-red-500/20"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-colors border border-red-500/10 hover:border-red-500/20"
               >
-                <XCircle className="w-5 h-5" />
+                <XCircle className="w-4 h-4" />
                 End Party
               </button>
             </div>

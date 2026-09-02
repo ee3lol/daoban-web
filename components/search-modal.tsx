@@ -82,23 +82,23 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       {}
       <div className="absolute inset-0 z-0" onClick={onClose} />
 
-      {}
-      <div className="relative z-10 w-full max-w-2xl bg-background border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+      {/* Modal Container */}
+      <div className="relative z-10 w-full max-w-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] backdrop-blur-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.2)] rounded-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.05)]">
           <h2 className="text-xl font-bold text-[#EAE8E3] tracking-wide">
             Search
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            className="p-2 rounded-full hover:bg-[rgba(255,255,255,0.1)] text-white/50 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {}
-        <div className="px-6 py-4 border-b border-white/5 bg-background-elevated">
+        {/* Input */}
+        <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.01)]">
           <div className="relative flex items-center">
             <Search className="absolute left-4 w-5 h-5 text-white/40" />
             <input
@@ -107,12 +107,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search movies, tv shows..."
-              className="w-full bg-background-light text-[#EAE8E3] border border-white/10 rounded-xl py-4 pl-12 pr-12 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-[15px]"
+              className="w-full bg-[rgba(255,255,255,0.025)] text-[#EAE8E3] border border-[rgba(255,255,255,0.06)] rounded-xl py-4 pl-12 pr-12 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-[15px]"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
-                className="absolute right-4 p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                className="absolute right-4 p-1.5 rounded-full hover:bg-[rgba(255,255,255,0.1)] text-white/40 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -120,8 +120,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           </div>
         </div>
 
-        {}
-        <div className="flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar bg-background">
+        {/* Results Body */}
+        <div className="flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar">
           {isLoading && !results.length && (
             <div className="flex flex-col items-center justify-center p-12 text-white/30 gap-4">
               <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />

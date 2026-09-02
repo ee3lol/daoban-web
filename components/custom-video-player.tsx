@@ -27,7 +27,7 @@ interface CustomVideoPlayerProps {
   poster?: string;
   autoPlay?: boolean;
   initialTime?: number;
-  onProgress?: (currentTime: number, duration: number) => void;
+  onProgress?: (currentTime: number, duration: number, isPlaying: boolean) => void;
   socket?: any;
   partyId?: string | null;
   isInParty?: boolean;
@@ -35,6 +35,9 @@ interface CustomVideoPlayerProps {
   itemDescription?: string;
   itemMetadata?: string;
   itemLogo?: string;
+  isHost?: boolean;
+  partySettings?: { anyoneCanControl: boolean };
+  userId?: string;
 }
 
 export default function CustomVideoPlayer({ 
@@ -49,11 +52,18 @@ export default function CustomVideoPlayer({
   itemTitle,
   itemDescription,
   itemMetadata,
-  itemLogo
+  itemLogo,
+  isHost,
+  partySettings,
+  userId
 }: CustomVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+
+  const [hasReceivedInitialSync, setHasReceivedInitialSync] = useState(false);
+  const pendingSyncTime = useRef<number | null>(null);
+  const pendingSyncPlay = useRef<boolean>(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -147,6 +157,74 @@ export default function CustomVideoPlayer({
       socket.off("party_action", handlePartyAction);
     };
   }, [socket, isInParty, partyId]);
+
+  useEffect(() => {
+    if (!socket || !isInParty || !partyId) return;
+
+    const handleRequestSync = (data: any) => {
+      if (isHost && videoRef.current) {
+         socket.emit("sync_state", {
+           targetSocketId: data.targetSocketId,
+           time: videoRef.current.currentTime,
+           isPlaying: !videoRef.current.paused
+         });
+      }
+    };
+
+    const handleSyncState = (data: any) => {
+      if (!isHost && videoRef.current) {
+        setHasReceivedInitialSync(true);
+        isRemoteAction.current = true;
+        
+        if (videoRef.current.readyState >= 1) {
+          if (data.time !== undefined) {
+             videoRef.current.currentTime = data.time;
+          }
+          if (data.isPlaying) {
+             videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
+          } else {
+             videoRef.current.pause();
+          }
+        } else {
+          pendingSyncTime.current = data.time;
+          pendingSyncPlay.current = data.isPlaying;
+        }
+        
+        setTimeout(() => { isRemoteAction.current = false; }, 500);
+      }
+    };
+
+    const handleSyncUpdate = (data: any) => {
+      if (!isHost && videoRef.current) {
+        setHasReceivedInitialSync(true);
+        const drift = Math.abs(videoRef.current.currentTime - data.time);
+        if (drift > 2) {
+           isRemoteAction.current = true;
+           videoRef.current.currentTime = data.time;
+           if (data.isPlaying && videoRef.current.paused) {
+             videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
+           } else if (!data.isPlaying && !videoRef.current.paused) {
+             videoRef.current.pause();
+           }
+           setTimeout(() => { isRemoteAction.current = false; }, 500);
+        }
+      }
+    };
+
+    socket.on("request_sync", handleRequestSync);
+    socket.on("sync_state", handleSyncState);
+    socket.on("party_sync_update", handleSyncUpdate);
+
+    if (!isHost) {
+      socket.emit("request_sync", { partyId });
+    }
+
+    return () => {
+      socket.off("request_sync", handleRequestSync);
+      socket.off("sync_state", handleSyncState);
+      socket.off("party_sync_update", handleSyncUpdate);
+    };
+  }, [socket, isInParty, partyId, isHost]);
   const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -219,6 +297,9 @@ export default function CustomVideoPlayer({
 
     const safePlay = () => {
       if (videoRef.current) {
+        if (isInParty && !isHost && !hasReceivedInitialSync && !pendingSyncPlay.current) {
+           return;
+        }
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           playPromise.catch(e => {
@@ -245,7 +326,7 @@ export default function CustomVideoPlayer({
         maxBufferLength: 30,
       };
       
-      if (initialTime > 0) {
+      if (!isInParty && initialTime > 0) {
         hlsConfig.startPosition = initialTime;
       }
       
@@ -434,7 +515,7 @@ export default function CustomVideoPlayer({
       setDuration(duration);
 
       if (onProgress && Math.abs(currentTime - lastProgressUpdate.current) > 10) {
-        onProgress(currentTime, duration);
+        onProgress(currentTime, duration, !videoRef.current.paused);
         lastProgressUpdate.current = currentTime;
       }
     }
@@ -595,6 +676,8 @@ export default function CustomVideoPlayer({
     }
   };
 
+  const canControl = !isInParty || isHost || (partySettings?.anyoneCanControl === true);
+
   useEffect(() => {
     let controlsTimeout: NodeJS.Timeout | undefined;
     let idleTimeout: NodeJS.Timeout | undefined;
@@ -671,28 +754,46 @@ export default function CustomVideoPlayer({
           initAudio();
           setIsPlaying(true);
           emitPartyAction('PLAY', videoRef.current?.currentTime);
+          if (onProgress && videoRef.current) {
+            onProgress(videoRef.current.currentTime, videoRef.current.duration, true);
+            lastProgressUpdate.current = videoRef.current.currentTime;
+          }
         }}
         onPause={() => {
           setIsPlaying(false);
           setIsBuffering(false);
           emitPartyAction('PAUSE');
+          if (onProgress && videoRef.current) {
+            onProgress(videoRef.current.currentTime, videoRef.current.duration, false);
+            lastProgressUpdate.current = videoRef.current.currentTime;
+          }
         }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
         onCanPlay={() => setIsBuffering(false)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
-          if (initialTime > 0 && videoRef.current) {
+          if (!isInParty && initialTime > 0 && videoRef.current) {
             
             if (!(activeSource?.isM3U8 && Hls.isSupported())) {
-              videoRef.current.currentTime = initialTime;
+               videoRef.current.currentTime = initialTime;
             }
           }
+          if (pendingSyncTime.current !== null && videoRef.current) {
+             videoRef.current.currentTime = pendingSyncTime.current;
+             if (pendingSyncPlay.current) {
+               videoRef.current.play().catch(e => console.warn(e));
+             }
+             pendingSyncTime.current = null;
+          }
         }}
-        onClick={togglePlay}
+        onClick={() => {
+          if (canControl) togglePlay();
+        }}
         playsInline
       >
         {}
+        {/* Subtitles (Native fallback) */}
         {vttSubtitles.map((sub: any, i: number) => (
           <track
             key={i}
@@ -703,6 +804,21 @@ export default function CustomVideoPlayer({
           />
         ))}
       </video>
+
+      {/* Waiting for Host Overlay */}
+      {isInParty && !isHost && !hasReceivedInitialSync && (
+        <div className="absolute inset-0 z-40 bg-black/90 flex flex-col items-center justify-center backdrop-blur-md">
+           <svg
+             className="w-12 h-12 text-accent animate-spin mb-6"
+             viewBox="0 0 24 24"
+           >
+             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+           </svg>
+           <h3 className="text-white font-bold tracking-widest uppercase text-lg mb-2">Waiting for Host</h3>
+           <p className="text-white/50 text-sm">The movie will start automatically when the host begins playback.</p>
+        </div>
+      )}
 
       {}
       {isBuffering && (
@@ -736,7 +852,7 @@ export default function CustomVideoPlayer({
 
       {/* Big Center Controls */}
       <div 
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-6 md:gap-12 z-30 transition-all duration-300 ${showControls && !isBuffering ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-6 md:gap-12 z-30 transition-all duration-300 ${showControls && !isBuffering && canControl ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
       >
         <button 
           onClick={(e) => { e.stopPropagation(); handleRewind(); }}

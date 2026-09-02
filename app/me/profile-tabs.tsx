@@ -73,7 +73,7 @@ export default function ProfileTabs({
     themeStyle: "dark",
   };
   const hasUnsavedChanges =
-    pendingPreferences !== null &&
+    pendingPreferences !== null && !isSavingAppearance &&
     (pendingPreferences.accentColor !== preferences?.accentColor ||
       pendingPreferences.filmGrain !== preferences?.filmGrain ||
       pendingPreferences.themeStyle !== (preferences?.themeStyle || "dark"));
@@ -1097,18 +1097,14 @@ export default function ProfileTabs({
               <button
                 onClick={() => {
                   const prefsToSave = pendingPreferences!;
-                  // Optimistically apply and hide banner instantly
-                  setPendingPreferences(null);
+                  // Optimistically apply and hide banner instantly by setting isSavingAppearance
                   setIsSavingAppearance(true);
 
                   updateUserPreferences(prefsToSave)
                     .then(() => {
                       router.refresh();
-                      setIsSavingAppearance(false);
                     })
                     .catch(() => {
-                      // Revert if failed
-                      setPendingPreferences(prefsToSave);
                       setIsSavingAppearance(false);
                     });
                 }}

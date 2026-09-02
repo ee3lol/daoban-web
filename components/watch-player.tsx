@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MdArrowBack, MdGridView, MdClose, MdPlaylistPlay, MdChatBubbleOutline, MdPlayArrow } from 'react-icons/md';
 import { fetchTVSeason } from '@/lib/actions/tmdb';
@@ -46,13 +46,35 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
   const { socket, isConnected } = useSocket();
   const searchParams = useSearchParams();
   const partyId = searchParams.get("party");
-  
+
   const [isInParty, setIsInParty] = useState(false);
   const [partyError, setPartyError] = useState<string | null>(null);
   const [partyPassword, setPartyPassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
   const [partyHostId, setPartyHostId] = useState<string | null>(null);
-  const [partyMembers, setPartyMembers] = useState<{id: string, name: string}[]>([]);
+  const [partyMembers, setPartyMembers] = useState<{ id: string, name: string, image?: string }[]>([]);
+  const [partySettings, setPartySettings] = useState({ anyoneCanControl: false });
+  const [partyMessages, setPartyMessages] = useState<any[]>([]);
+
+  const isHost = session?.user?.id === partyHostId;
+
+  useEffect(() => {
+    if (isInParty && isHost && socket) {
+      socket.emit("party_change_media", { partyId, season: selectedSeason, episode: selectedEpisode });
+    }
+  }, [selectedSeason, selectedEpisode, isInParty, isHost, socket, partyId]);
+
+  useEffect(() => {
+    if (!socket || !isInParty || isHost) return;
+    const handleChangeMedia = (data: any) => {
+      if (data.season && data.season !== selectedSeason) setSelectedSeason(data.season);
+      if (data.episode && data.episode !== selectedEpisode) setSelectedEpisode(data.episode);
+    };
+    socket.on("party_change_media", handleChangeMedia);
+    return () => {
+      socket.off("party_change_media", handleChangeMedia);
+    };
+  }, [socket, isInParty, isHost, selectedSeason, selectedEpisode]);
 
   useEffect(() => {
     if (isConnected && socket && partyId && session?.user && !isInParty) {
@@ -60,6 +82,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
         partyId,
         userId: session.user.id,
         userName: session.user.name || session.user.username || "Guest",
+        userImage: session.user.image,
         password: partyPassword || undefined
       }, (res: any) => {
         if (res.success) {
@@ -68,6 +91,8 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
           setPartyError(null);
           setPartyHostId(res.hostId);
           setPartyMembers(res.members || []);
+          if (res.settings) setPartySettings(res.settings);
+          if (res.messages) setPartyMessages(res.messages);
         } else {
           if (res.error === "Invalid password") {
             setNeedsPassword(true);
@@ -78,6 +103,42 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
       });
     }
   }, [isConnected, socket, partyId, session?.user, partyPassword, isInParty]);
+
+  // Handle auto-reconnect
+  const prevConnected = useRef(isConnected);
+  useEffect(() => {
+    if (prevConnected.current === false && isConnected === true && isInParty && socket && partyId && session?.user) {
+      socket.emit("join_party", {
+        partyId,
+        userId: session.user.id,
+        userName: session.user.name || session.user.username || "Guest",
+        userImage: session.user.image,
+        password: partyPassword || undefined
+      }, (res: any) => {
+        if (!res.success) {
+          if (isHost) {
+            socket.emit("create_party", {
+              partyId,
+              hostId: session.user.id,
+              hostName: session.user.name || session.user.username || "Host",
+              hostImage: session.user.image,
+              userLimit: 10,
+              password: partyPassword || undefined
+            }, (createRes: any) => {
+              if (!createRes.success) {
+                setIsInParty(false);
+                setPartyError(createRes.error);
+              }
+            });
+          } else {
+            setIsInParty(false);
+            setPartyError(res.error || "Party no longer exists.");
+          }
+        }
+      });
+    }
+    prevConnected.current = isConnected;
+  }, [isConnected, socket, isInParty, partyId, session?.user, partyPassword, isHost]);
 
   // Listen for party events (kick, end, member updates)
   useEffect(() => {
@@ -94,17 +155,40 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
     const handleMembersUpdate = (data: any) => {
       setPartyMembers(data.members || []);
     };
+    const handleSettingsUpdated = (data: any) => {
+      setPartySettings(data.settings);
+    };
 
     socket.on("party_kicked", handleKicked);
     socket.on("party_ended", handleEnded);
     socket.on("party_members_update", handleMembersUpdate);
+    socket.on("party_settings_updated", handleSettingsUpdated);
 
     return () => {
       socket.off("party_kicked", handleKicked);
       socket.off("party_ended", handleEnded);
       socket.off("party_members_update", handleMembersUpdate);
+      socket.off("party_settings_updated", handleSettingsUpdated);
     };
   }, [socket, partyId]);
+
+  // Continuous Host Sync Interval
+  useEffect(() => {
+    if (!isInParty || !isHost || !socket || !partyId) return;
+
+    const interval = setInterval(() => {
+      const video = document.querySelector('video');
+      if (video) {
+        socket.emit("party_sync_update", {
+          partyId,
+          time: video.currentTime,
+          isPlaying: !video.paused
+        });
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isInParty, isHost, socket, partyId]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -118,16 +202,20 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
   useEffect(() => {
     if (isConnected && socket) {
       const watchingText = item?.title || item?.name || "Video";
+      const initialMediaInfo = {
+        title: watchingText,
+        description: type === 'movie' ? 'Movie' : `S${selectedSeason} E${selectedEpisode}`,
+        image: item?.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : undefined,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        updatedAt: Date.now()
+      };
       console.log("Emitting presence:", watchingText);
-      socket.emit("update_presence", { watching: watchingText });
-      
-      const interval = setInterval(() => {
-        socket.emit("update_presence", { watching: watchingText });
-      }, 10000); // Re-sync every 10 seconds just in case
-      
+      socket.emit("update_presence", { watching: watchingText, mediaInfo: initialMediaInfo });
+
       return () => {
         console.log("Clearing presence");
-        clearInterval(interval);
         if (isConnected && socket) {
           socket.emit("update_presence", { watching: null });
         }
@@ -151,7 +239,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
     async function loadSources() {
       setIsSourcesLoading(true);
       setVideoSources([]);
-      
+
       const [res, progress] = await Promise.all([
         fetchVideoSources(type, item.id, selectedSeason, selectedEpisode),
         getMediaProgress(item.id, type, type === 'movie' ? undefined : selectedSeason, type === 'movie' ? undefined : selectedEpisode)
@@ -264,6 +352,9 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               socket={socket}
               partyId={partyId}
               isInParty={isInParty}
+              isHost={isHost}
+              partySettings={partySettings}
+              userId={session?.user?.id}
               itemTitle={item.name || item.title}
               itemDescription={type === 'movie' ? item.overview : (seasonData?.episodes?.find((e: any) => e.episode_number === selectedEpisode)?.overview || item.overview)}
               itemMetadata={[
@@ -273,7 +364,21 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
                 (item.release_date || item.first_air_date || '').split('-')[0]
               ].filter(Boolean).join(' • ')}
               itemLogo={item.images?.logos?.[0]?.file_path ? `https://image.tmdb.org/t/p/w500${item.images.logos[0].file_path}` : undefined}
-              onProgress={(currentTime, duration) => {
+              onProgress={(currentTime, duration, isPlaying) => {
+                if (socket && isConnected) {
+                  socket.emit("update_presence", {
+                    watching: item.title || item.name || "Video",
+                    mediaInfo: {
+                      title: item.title || item.name || "Video",
+                      description: type === 'movie' ? 'Movie' : `Season ${selectedSeason} Episode ${selectedEpisode}`,
+                      image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : undefined,
+                      isPlaying,
+                      currentTime,
+                      duration,
+                      updatedAt: Date.now()
+                    }
+                  });
+                }
                 updateWatchHistory({
                   mediaId: item.id,
                   mediaType: type,
@@ -379,7 +484,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
                           key={ep.id}
                           onClick={() => {
                             setSelectedEpisode(ep.episode_number);
-                            
+
                             if (window.innerWidth < 768) setIsSidebarOpen(false);
                           }}
                           className={`relative flex items-center gap-4 px-4 py-4 text-left transition-colors border-b border-white/5 group ${isPlaying ? 'bg-white/5' : 'hover:bg-white/5'
@@ -432,7 +537,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               </div>
             )}
 
-            {}
+            { }
             {activeTab === 'comments' && (
               <div className="absolute inset-0 h-full">
                 <MemoizedCommentsSection
@@ -452,8 +557,11 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
                   partyId={partyId}
                   userId={session.user.id}
                   userName={session.user.name || "Unknown"}
+                  userImage={session.user.image}
                   hostId={partyHostId}
                   members={partyMembers}
+                  partySettings={partySettings}
+                  initialMessages={partyMessages}
                 />
               </div>
             )}

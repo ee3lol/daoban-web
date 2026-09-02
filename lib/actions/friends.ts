@@ -35,7 +35,7 @@ export async function sendFriendRequest(targetUsername: string) {
       return { success: false, error: 'User not found' };
     }
 
-    const existingRelationship = await db
+    const existingRelationships = await db
       .select()
       .from(friends)
       .where(
@@ -45,20 +45,31 @@ export async function sendFriendRequest(targetUsername: string) {
         )
       );
 
-    if (existingRelationship.length > 0) {
-      const rel = existingRelationship[0];
-      if (rel.status === 'accepted') return { success: false, error: 'You are already friends' };
-      if (rel.status === 'blocked') return { success: false, error: 'User not found' }; 
-      if (rel.status === 'pending') {
-        if (rel.senderId === currentUser.id) return { success: false, error: 'Request already sent' };
-        if (rel.receiverId === currentUser.id) return { success: false, error: 'This user already sent you a request. Check your pending requests.' };
-      }
-      if (rel.status === 'declined') {
+    if (existingRelationships.length > 0) {
+      let hasAccepted = false;
+      let hasBlocked = false;
+      let pendingRel = null;
+      let declinedRel = null;
 
+      for (const rel of existingRelationships) {
+        if (rel.status === 'accepted') hasAccepted = true;
+        if (rel.status === 'blocked') hasBlocked = true;
+        if (rel.status === 'pending') pendingRel = rel;
+        if (rel.status === 'declined') declinedRel = rel;
+      }
+
+      if (hasAccepted) return { success: false, error: 'You are already friends' };
+      if (hasBlocked) return { success: false, error: 'User not found' }; 
+      if (pendingRel) {
+        if (pendingRel.senderId === currentUser.id) return { success: false, error: 'Request already sent' };
+        if (pendingRel.receiverId === currentUser.id) return { success: false, error: 'This user already sent you a request. Check your pending requests.' };
+      }
+      
+      if (declinedRel) {
         await db.update(friends)
           .set({ status: 'pending', senderId: currentUser.id, receiverId: targetUser.id, updatedAt: new Date() })
-          .where(eq(friends.id, rel.id));
-        return { success: true };
+          .where(eq(friends.id, declinedRel.id));
+        return { success: true, targetUserId: targetUser.id };
       }
     }
 
@@ -69,7 +80,7 @@ export async function sendFriendRequest(targetUsername: string) {
       status: 'pending',
     });
 
-    return { success: true };
+    return { success: true, targetUserId: targetUser.id };
   } catch (error) {
     console.error('Error sending friend request:', error);
     return { success: false, error: 'Internal server error' };
@@ -97,7 +108,7 @@ export async function acceptFriendRequest(requestId: string) {
       .set({ status: 'accepted', updatedAt: new Date() })
       .where(eq(friends.id, requestId));
 
-    return { success: true };
+    return { success: true, targetUserId: req.senderId };
   } catch (error) {
     console.error('Error accepting friend request:', error);
     return { success: false, error: 'Internal server error' };
@@ -119,7 +130,8 @@ export async function declineFriendRequest(requestId: string) {
 
     await db.delete(friends).where(eq(friends.id, requestId));
 
-    return { success: true };
+    const targetUserId = req.senderId === currentUser.id ? req.receiverId : req.senderId;
+    return { success: true, targetUserId };
   } catch (error) {
     console.error('Error declining friend request:', error);
     return { success: false, error: 'Internal server error' };
@@ -149,7 +161,7 @@ export async function removeFriend(friendId: string) {
       await db.delete(friends).where(eq(friends.id, existingRelationship[0].id));
     }
 
-    return { success: true };
+    return { success: true, targetUserId: friendId };
   } catch (error) {
     console.error('Error removing friend:', error);
     return { success: false, error: 'Internal server error' };
@@ -224,5 +236,40 @@ export async function getFriendData() {
   } catch (error) {
     console.error('Error getting friend data:', error);
     return null;
+  }
+}
+
+export async function blockFriend(friendId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const existingRelationship = await db
+      .select()
+      .from(friends)
+      .where(
+        or(
+          and(eq(friends.senderId, currentUser.id), eq(friends.receiverId, friendId)),
+          and(eq(friends.senderId, friendId), eq(friends.receiverId, currentUser.id))
+        )
+      );
+
+    if (existingRelationship.length > 0) {
+      await db.update(friends)
+        .set({ status: 'blocked', senderId: currentUser.id, receiverId: friendId, updatedAt: new Date() })
+        .where(eq(friends.id, existingRelationship[0].id));
+    } else {
+      await db.insert(friends).values({
+        id: generateId(),
+        senderId: currentUser.id,
+        receiverId: friendId,
+        status: 'blocked',
+      });
+    }
+
+    return { success: true, targetUserId: friendId };
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    return { success: false, error: 'Internal server error' };
   }
 }
