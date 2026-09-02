@@ -78,9 +78,9 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
 
         {/* Center: Logo */}
         <Link href="/" className="flex items-center gap-3 pointer-events-auto absolute left-1/2 -translate-x-1/2">
-          <span className="text-[#EAE8E3] font-semibold text-[16px] tracking-[0.15em] drop-shadow-md">DAOBAN</span>
+          <span className="text-[#EAE8E3] font-semibold text-[16px] tracking-[0.15em]">DAOBAN</span>
           <span className="text-[#888888]/40 text-xs">|</span>
-          <span className="text-accent text-[13px] font-medium drop-shadow-md">盗版</span>
+          <span className="text-accent text-[13px] font-medium">盗版</span>
         </Link>
 
         {/* Right: Notifications */}
