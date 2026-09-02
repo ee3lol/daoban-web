@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: number, season?: number, episode?: number) {

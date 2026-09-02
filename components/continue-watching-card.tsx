@@ -32,7 +32,7 @@ export default function ContinueWatchingCard({ item }: { item: WatchHistoryItem 
     }
   }
 
-  let href = item.mediaType === 'tv'
+  const href = item.mediaType === 'tv'
     ? `/watch/tv/${item.mediaId}?season=${item.season || 1}&episode=${item.episode || 1}`
     : `/watch/movie/${item.mediaId}`;
 

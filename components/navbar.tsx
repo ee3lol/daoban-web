@@ -8,6 +8,8 @@ import { motion } from 'framer-motion';
 import { Search, User, Home, Compass } from 'lucide-react';
 import AuthModal from './auth-modal';
 import SearchModal from './search-modal';
+import NotificationsPopover from './notifications-popover';
+import PwaInstallButton from './pwa-install-button';
 
 export default function Navbar({ user }: { user?: { image?: string | null; name?: string | null; username?: string | null } | null }) {
   const pathname = usePathname() || '';
@@ -29,7 +31,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    handleScroll(); 
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -49,7 +51,7 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
     setIsNavigatingToMe(false);
   }, [pathname]);
 
-  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends')) return null;
+  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends') || pathname.startsWith('/admin')) return null;
 
   const glassStyle = {
     background: 'rgba(255, 255, 255, 0.03)',
@@ -61,36 +63,47 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
 
   return (
     <>
-      {}
-      
-      {}
+      { }
+
+      { }
       <div className="md:hidden fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#151515] via-[#151515]/70 to-transparent pointer-events-none z-40" />
 
-      {}
-      <div className="md:hidden fixed top-6 left-0 right-0 z-[100] flex items-center justify-center pointer-events-none">
-        <Link href="/" className="flex items-center gap-3 pointer-events-auto">
+      {/* Mobile Top Navbar Area */}
+      <div className="md:hidden fixed top-6 left-0 right-0 z-[100] flex items-center justify-between px-6 pointer-events-none">
+
+        {/* Left: PWA Install */}
+        <div className="pointer-events-auto">
+          <PwaInstallButton />
+        </div>
+
+        {/* Center: Logo */}
+        <Link href="/" className="flex items-center gap-3 pointer-events-auto absolute left-1/2 -translate-x-1/2">
           <span className="text-[#EAE8E3] font-semibold text-[16px] tracking-[0.15em] drop-shadow-md">DAOBAN</span>
           <span className="text-[#888888]/40 text-xs">|</span>
           <span className="text-accent text-[13px] font-medium drop-shadow-md">盗版</span>
         </Link>
+
+        {/* Right: Notifications */}
+        <div className="pointer-events-auto">
+          <NotificationsPopover user={user} />
+        </div>
       </div>
 
-      {}
+      { }
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-[100] flex flex-col items-center">
-        
-        {}
-        <div 
-          className={`absolute bottom-[calc(100%+16px)] left-0 right-0 py-4 rounded-[20px] flex flex-col items-center gap-4 transition-all duration-300 origin-bottom ${
-            isMobileMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
-          }`}
+
+        { }
+        <div
+          className={`absolute bottom-[calc(100%+16px)] left-0 right-0 py-4 rounded-[20px] flex flex-col items-center gap-4 transition-all duration-300 origin-bottom ${isMobileMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+            }`}
           style={glassStyle}
         >
           {navLinks.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
-              <Link 
-                key={item.label} 
-                href={item.href} 
+              <Link
+                key={item.label}
+                href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`text-[12px] font-medium tracking-[0.2em] transition-colors py-2 w-full text-center ${isActive ? 'text-accent' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
               >
@@ -105,29 +118,29 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             <Home className="w-[22px] h-[22px]" strokeWidth={2} />
             <span className="text-[9px] font-bold tracking-widest">HOME</span>
           </Link>
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`flex flex-col items-center gap-1.5 transition-colors ${isMobileMenuOpen ? 'text-[#EAE8E3]' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
+            className={`flex flex-col items-center gap-1.5 transition-colors ${isMobileMenuOpen ? 'text-[#EAE8E3]' : 'text-[#888888] hover:text-accent'}`}
           >
             <Compass className="w-[22px] h-[22px]" strokeWidth={2} />
             <span className="text-[9px] font-bold tracking-widest">BROWSE</span>
           </button>
-          <button 
-            onClick={() => { setIsSearchOpen(true); setIsMobileMenuOpen(false); }} 
-            className="flex flex-col items-center gap-1.5 text-[#888888] hover:text-[#EAE8E3] transition-colors"
+          <button
+            onClick={() => { setIsSearchOpen(true); setIsMobileMenuOpen(false); }}
+            className="flex flex-col items-center gap-1.5 text-[#888888] hover:text-accent transition-colors"
           >
             <Search className="w-[22px] h-[22px]" strokeWidth={2} />
             <span className="text-[9px] font-bold tracking-widest">SEARCH</span>
           </button>
-          <button 
+          <button
             disabled={isNavigatingToMe}
-            onClick={() => { 
+            onClick={() => {
               setIsMobileMenuOpen(false);
               if (user) {
                 setIsNavigatingToMe(true);
                 router.push('/me');
               } else {
-                setIsAuthModalOpen(true); 
+                setIsAuthModalOpen(true);
               }
             }}
             className="group flex flex-col items-center gap-1.5 text-[#888888] hover:text-[#EAE8E3] transition-all duration-300 active:scale-90 disabled:opacity-50 disabled:pointer-events-none"
@@ -148,42 +161,41 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </nav>
       </div>
 
-      {}
+      { }
       <div className="hidden md:flex fixed top-8 left-0 right-0 z-50 justify-center px-6 pointer-events-none">
-        <nav 
-          className={`flex items-center justify-between w-full max-w-5xl px-8 py-4 rounded-[16px] transition-all duration-500 relative border pointer-events-auto ${
-            isScrolled 
-              ? 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.05)] backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.1)]' 
+        <nav
+          className={`flex items-center justify-between w-full max-w-5xl px-8 py-4 rounded-[16px] transition-all duration-500 relative border pointer-events-auto ${isScrolled
+              ? 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.05)] backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.1)]'
               : 'bg-transparent border-transparent'
-          }`}
+            }`}
         >
-          {}
-          <Link 
-            href="/" 
+          { }
+          <Link
+            href="/"
             className="flex items-center gap-4 group relative"
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
-              setTooltipArrowX(Math.max(15, Math.min(x, 260))); 
+              setTooltipArrowX(Math.max(15, Math.min(x, 260)));
             }}
           >
             <span className="text-[#EAE8E3] font-semibold text-lg tracking-[0.15em] transition-colors">DAOBAN</span>
             <span className="text-[#888888]/30 text-sm">|</span>
             <span className="text-accent text-[15px] font-medium transition-colors">盗版</span>
 
-            {}
+            { }
             <div className="absolute top-full mt-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-[500ms] pointer-events-none z-50 translate-y-2 group-hover:translate-y-0">
-              
-              {}
-              <div 
-                className="absolute -top-[6px] w-3 h-3 bg-[rgba(21,21,21,0.95)] border-t border-l border-[rgba(255,255,255,0.08)] transform rotate-45 z-10 backdrop-blur-xl transition-all duration-75 ease-out" 
+
+              { }
+              <div
+                className="absolute -top-[6px] w-3 h-3 bg-[rgba(21,21,21,0.95)] border-t border-l border-[rgba(255,255,255,0.08)] transform rotate-45 z-10 backdrop-blur-xl transition-all duration-75 ease-out"
                 style={{ left: `${tooltipArrowX}px` }}
               />
 
               <div className="bg-[rgba(21,21,21,0.95)] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-5 rounded-[16px] w-[280px] flex flex-col gap-2 relative overflow-hidden mt-0">
-                {}
+                { }
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
-                
+
                 <div className="flex items-center gap-2">
                   <span className="text-[#EAE8E3] text-[13px] font-bold tracking-widest uppercase">DAOBAN</span>
                   <span className="text-accent text-[13px] font-medium tracking-widest">盗版</span>
@@ -198,21 +210,21 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             </div>
           </Link>
 
-          {}
-          <div className="flex items-center gap-10">
+          {/* Desktop Nav Links (Full width on large screens) */}
+          <div className="hidden lg:flex items-center gap-8 xl:gap-10">
             {navLinks.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
-                <Link 
-                  key={item.label} 
-                  href={item.href} 
-                  className={`relative text-[12px] font-medium tracking-[0.2em] transition-colors duration-200 py-1 ${isActive ? 'text-[#EAE8E3]' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`relative text-[11px] xl:text-[12px] font-medium tracking-[0.2em] transition-colors duration-200 py-1 ${isActive ? 'text-[#EAE8E3]' : 'text-[#888888] hover:text-[#EAE8E3]'}`}
                 >
                   {item.label}
                   {isActive && (
-                    <motion.span 
+                    <motion.span
                       layoutId="navbar-underline"
-                      className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-accent" 
+                      className="absolute left-0 -bottom-1 w-full h-[1.5px] bg-accent"
                     />
                   )}
                 </Link>
@@ -220,9 +232,33 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
             })}
           </div>
 
-          {}
+          {/* Browse Dropdown (Medium screens only) */}
+          <div className="hidden md:flex lg:hidden items-center group relative">
+            <button className="flex items-center gap-2 text-[#888888] hover:text-[#EAE8E3] transition-colors text-[12px] font-medium tracking-[0.2em] py-1">
+              BROWSE
+            </button>
+            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto z-50 translate-y-2 group-hover:translate-y-0">
+              <div className="absolute -top-[6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-[rgba(21,21,21,0.95)] border-t border-l border-[rgba(255,255,255,0.08)] transform rotate-45 z-10 backdrop-blur-xl transition-all duration-75 ease-out" />
+              <div className="bg-[rgba(21,21,21,0.95)] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-2 rounded-[16px] w-[180px] flex flex-col gap-1 relative overflow-hidden">
+                {navLinks.map(item => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`px-4 py-2.5 rounded-xl transition-colors text-[11px] font-medium tracking-[0.2em] ${isActive ? 'bg-white/10 text-white' : 'text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5'}`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          { }
           <div className="flex items-center gap-5">
-            <button 
+            <button
               onClick={() => setIsSearchOpen(true)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-[#888888] hover:text-[#EAE8E3] group"
             >
@@ -232,9 +268,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
                 <span className="text-[9px] font-bold tracking-widest uppercase border border-white/10 px-1.5 py-0.5 rounded-sm bg-black/40">K</span>
               </div>
             </button>
-            <button 
+            {user && <NotificationsPopover user={user} />}
+            <button
               disabled={isNavigatingToMe}
-              onClick={() => { 
+              onClick={() => {
                 if (user) {
                   setIsNavigatingToMe(true);
                   router.push('/me');
@@ -260,10 +297,10 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
         </nav>
       </div>
 
-      {}
+      { }
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-      
-      {}
+
+      { }
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );

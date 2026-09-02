@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
@@ -333,7 +334,7 @@ export default function CustomVideoPlayer({
       const hls = new Hls(hlsConfig);
       hlsRef.current = hls;
 
-      let streamUrl = activeSource.url;
+      const streamUrl = activeSource.url;
 
       hls.loadSource(streamUrl);
       hls.attachMedia(videoRef.current);
@@ -408,7 +409,7 @@ export default function CustomVideoPlayer({
         }
       });
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      let streamUrl = activeSource.url;
+      const streamUrl = activeSource.url;
       
       videoRef.current.src = streamUrl;
       if (autoPlay) safePlay();
@@ -862,7 +863,7 @@ export default function CustomVideoPlayer({
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-          className="p-4 md:p-5 rounded-full bg-accent/90 hover:bg-accent text-white backdrop-blur-md transition-all transform hover:scale-110 border border-white/10 shadow-2xl drop-shadow-[0_0_15px_rgba(212,122,115,0.4)]"
+          className="p-4 md:p-5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all transform hover:scale-110 border border-white/5 shadow-xl"
         >
           {isPlaying ? <MdPause className="w-10 h-10 md:w-14 md:h-14" /> : <MdPlayArrow className="w-10 h-10 md:w-14 md:h-14" />}
         </button>

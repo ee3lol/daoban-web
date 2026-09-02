@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "@/components/navbar";
@@ -6,7 +7,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getContrastColor } from "@/lib/color";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: {
@@ -44,6 +47,9 @@ import Preloader from "@/components/preloader";
 import FriendsSidebar from "@/components/friends-sidebar";
 import { getFriendData } from "@/lib/actions/friends";
 import { SocketProvider } from "@/components/socket-provider";
+import PwaProvider from "@/components/pwa-provider";
+import AnnouncementBanner from "@/components/announcement-banner";
+import { getActiveAnnouncements } from "@/lib/actions/admin";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let session = null;
@@ -56,14 +62,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   const user = session?.user ?? null;
-  
+
   let prefs = null;
   try {
     prefs = await getUserPreferences();
   } catch (err) {
     console.error("[DB] Silent catch for preferences:", err);
   }
-  
+
   let friendData = null;
   if (user) {
     try {
@@ -72,7 +78,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       console.error("[DB] Silent catch for friend data:", err);
     }
   }
-  
+
+  let announcements: any = [];
+  try {
+    announcements = await getActiveAnnouncements();
+  } catch (err) {
+    console.error("[DB] Silent catch for announcements:", err);
+  }
+
   const accentColor = prefs?.accentColor ?? '#fc535a';
   const showFilmGrain = prefs?.filmGrain ?? true;
   const themeStyle = prefs?.themeStyle ?? 'dark';
@@ -95,9 +108,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={themeStyle}>
-      <body 
-        className={`antialiased bg-background-base text-[#EAE8E3] min-h-screen relative overflow-x-hidden ${inter.className}`}
-        style={{ 
+      <body
+        className={`font-sans antialiased bg-background-base text-[#EAE8E3] min-h-screen relative overflow-x-hidden ${inter.variable}`}
+        style={{
           '--accent-red': accentColor,
           '--accent-foreground': accentForeground,
           '--bg-base': bgBase,
@@ -108,11 +121,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SocketProvider userId={user?.id}>
           {showFilmGrain && <div className="film-grain" />}
           <Preloader />
+          <AnnouncementBanner announcements={announcements} />
           <Navbar user={user} />
           <FriendsSidebar user={user} data={friendData} />
           {user && !user.hasSetUsername && <SetUsernameModal user={user} />}
           {children}
           <Footer />
+          <PwaProvider />
         </SocketProvider>
       </body>
     </html>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import MediaCard from '@/components/media-card';
 import { getByGenre } from '@/lib/tmdb';
 

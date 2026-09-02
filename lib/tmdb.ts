@@ -1,4 +1,4 @@
-const TMDB_BASE_URL = process.env.TMDB_PROXY_URL || 'http://localhost:3001';
+const TMDB_BASE_URL = process.env.BASE_DANBAO_API_URL || 'http://localhost:3001';
 
 async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -8,7 +8,7 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
     headers: {
       accept: 'application/json',
     },
-    next: { revalidate: 3600 } 
+    next: { revalidate: 3600 }
   });
 
   if (!res.ok) {
@@ -33,7 +33,7 @@ export async function getPopularMovies() {
 }
 
 export async function getPopularAnime() {
-  
+
   return fetchFromTMDB('/discover/tv', {
     with_genres: '16',
     with_original_language: 'ja',
@@ -50,12 +50,12 @@ export async function getTopRatedAnime() {
 }
 
 export async function getAiringAnime() {
-  
-  return fetchFromTMDB('/discover/tv', { 
-    with_genres: '16', 
-    with_original_language: 'ja', 
-    sort_by: 'popularity.desc', 
-    'first_air_date.gte': new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] 
+
+  return fetchFromTMDB('/discover/tv', {
+    with_genres: '16',
+    with_original_language: 'ja',
+    sort_by: 'popularity.desc',
+    'first_air_date.gte': new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   });
 }
 
@@ -89,15 +89,15 @@ export async function getTVGenres() {
 
 export async function getByGenre(genreId: string, type: 'movie' | 'tv' | 'anime' = 'movie', page = 1) {
   if (type === 'anime') {
-    return fetchFromTMDB(`/discover/tv`, { 
-      with_genres: `16,${genreId}`, 
-      with_original_language: 'ja', 
+    return fetchFromTMDB(`/discover/tv`, {
+      with_genres: `16,${genreId}`,
+      with_original_language: 'ja',
       sort_by: 'popularity.desc',
       page: page.toString()
     });
   }
-  return fetchFromTMDB(`/discover/${type}`, { 
-    with_genres: genreId, 
+  return fetchFromTMDB(`/discover/${type}`, {
+    with_genres: genreId,
     sort_by: 'popularity.desc',
     page: page.toString()
   });
@@ -120,8 +120,8 @@ export async function getTVSeasonDetails(id: string, seasonNumber: number) {
 }
 
 export async function searchMulti(query: string) {
-  return fetchFromTMDB('/search/multi', { 
-    query, 
+  return fetchFromTMDB('/search/multi', {
+    query,
     include_adult: 'false'
   });
 }

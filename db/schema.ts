@@ -31,6 +31,7 @@ export const session = pgTable('session', {
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  impersonatedBy: text('impersonated_by'),
 });
 
 export const account = pgTable('account', {
@@ -97,6 +98,7 @@ export const userPreferences = pgTable('user_preferences', {
   themeStyle: text('theme_style').notNull().default('dark'), // 'dark', 'pitch_black'
   cardRadius: text('card_radius').notNull().default('rounded-xl'), // 'rounded-none', 'rounded-md', 'rounded-xl', 'rounded-full'
   filmGrain: boolean('film_grain').notNull().default(true),
+  mentionPrivacy: text('mention_privacy').notNull().default('anyone'), // 'anyone', 'friends', 'nobody'
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
@@ -109,6 +111,7 @@ export const comments = pgTable('comments', {
   episode: integer('episode'),
   content: text('content').notNull(),
   parentId: text('parent_id').references((): AnyPgColumn => comments.id, { onDelete: 'cascade' }),
+  validMentions: text('valid_mentions').array().default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -229,6 +232,76 @@ export const messageReactionsRelations = relations(messageReactions, ({ one }) =
   }),
   user: one(user, {
     fields: [messageReactions.userId],
+    references: [user.id],
+  }),
+}));
+
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey(),
+  recipientId: text('recipient_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'reply', 'mention', 'like'
+  mediaId: integer('media_id'),
+  mediaType: text('media_type'),
+  season: integer('season'),
+  episode: integer('episode'),
+  commentId: text('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  recipient: one(user, {
+    fields: [notifications.recipientId],
+    references: [user.id],
+    relationName: 'recipient_notifications',
+  }),
+  sender: one(user, {
+    fields: [notifications.senderId],
+    references: [user.id],
+    relationName: 'sender_notifications',
+  }),
+  comment: one(comments, {
+    fields: [notifications.commentId],
+    references: [comments.id],
+  }),
+}));
+
+// ===== Admin Expansion Tables =====
+
+export const announcements = pgTable('announcements', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: text('type').notNull().default('info'), // 'info', 'warning', 'error', 'success'
+  isActive: boolean('is_active').notNull().default(true),
+  createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const auditLogs = pgTable('audit_logs', {
+  id: text('id').primaryKey(),
+  adminId: text('admin_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(), // e.g. 'delete_comment', 'ban_user', 'blacklist_media'
+  details: text('details'), // JSON stringified or raw text
+  targetId: text('target_id'), // ID of the user/comment/media affected
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const blacklistedMedia = pgTable('blacklisted_media', {
+  id: text('id').primaryKey(), // Usually `${mediaType}_${mediaId}` or `${mediaType}_${mediaId}_s${season}` or `${mediaType}_${mediaId}_s${season}e${episode}`
+  mediaId: integer('media_id').notNull(),
+  mediaType: text('media_type').notNull(),
+  season: integer('season'),
+  episode: integer('episode'),
+  reason: text('reason'),
+  adminId: text('admin_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const adminRelations = relations(auditLogs, ({ one }) => ({
+  admin: one(user, {
+    fields: [auditLogs.adminId],
     references: [user.id],
   }),
 }));

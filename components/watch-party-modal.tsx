@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, Lock, Link, Copy, Check, Send, Search } from "lucide-react";
+import { X, Users, Lock, Copy, Check, Send, Search } from "lucide-react";
 import { useSocket } from "@/components/socket-provider";
 
 interface WatchPartyModalProps {
@@ -27,6 +29,7 @@ export default function WatchPartyModal({
   hostName,
   onlineFriends
 }: WatchPartyModalProps) {
+  const router = useRouter();
   const { socket, isConnected } = useSocket();
   const [step, setStep] = useState<"setup" | "invite">("setup");
   const [userLimit, setUserLimit] = useState(5);
@@ -85,6 +88,7 @@ export default function WatchPartyModal({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -228,6 +232,7 @@ export default function WatchPartyModal({
                           <div key={friend.id} className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] rounded-xl border border-[rgba(255,255,255,0.05)] transition-colors">
                             <div className="flex items-center gap-3">
                               {friend.image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={friend.image} alt={friend.name} className="w-8 h-8 rounded-full border border-white/10 object-cover" />
                               ) : (
                                 <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-white/70">
@@ -266,7 +271,7 @@ export default function WatchPartyModal({
                   <button
                     onClick={() => {
                       onClose();
-                      window.location.href = `/watch/${mediaType}/${mediaId}?party=${partyId}`;
+                      router.push(`/watch/${mediaType}/${mediaId}?party=${partyId}`);
                     }}
                     className="w-full py-4 bg-accent hover:bg-accent/80 text-white rounded-xl font-bold tracking-widest text-xs uppercase transition-colors"
                   >

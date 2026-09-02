@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MdArrowBack, MdGridView, MdClose, MdPlaylistPlay, MdChatBubbleOutline, MdPlayArrow } from 'react-icons/md';
+import { MdGridView, MdClose, MdPlaylistPlay, MdChatBubbleOutline, MdPlayArrow } from 'react-icons/md';
 import { fetchTVSeason } from '@/lib/actions/tmdb';
 import { fetchVideoSources } from '@/lib/actions/video';
 import { getMediaProgress, updateWatchHistory } from '@/lib/actions/history';
+import { checkBlacklist } from '@/lib/actions/admin';
 import { getTMDBImageUrl } from '@/lib/tmdb';
 import { useSocket } from '@/components/socket-provider';
 import CustomVideoPlayer from './custom-video-player';
@@ -42,6 +44,18 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
   const [isSourcesLoading, setIsSourcesLoading] = useState(true);
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
   const [initialTime, setInitialTime] = useState(0);
+
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
+  const [isCheckingBlacklist, setIsCheckingBlacklist] = useState(true);
+
+  useEffect(() => {
+    async function check() {
+      const blocked = await checkBlacklist(item.id, type);
+      setIsBlacklisted(blocked);
+      setIsCheckingBlacklist(false);
+    }
+    check();
+  }, [item.id, type]);
 
   const { socket, isConnected } = useSocket();
   const searchParams = useSearchParams();
@@ -144,6 +158,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
   useEffect(() => {
     if (!socket || !partyId) return;
 
+
     const handleKicked = (data: any) => {
       setIsInParty(false);
       setPartyError(data.reason || "You were removed from the party.");
@@ -172,7 +187,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
     };
   }, [socket, partyId]);
 
-  // Continuous Host Sync Interval
+
   useEffect(() => {
     if (!isInParty || !isHost || !socket || !partyId) return;
 
@@ -233,7 +248,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
       setIsLoadingEpisodes(false);
     }
     loadSeason();
-  }, [selectedSeason, item.id, type]);
+  }, [selectedSeason, item.id, type, selectedEpisode]);
 
   useEffect(() => {
     async function loadSources() {
@@ -252,11 +267,42 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
       setIsSourcesLoading(false);
     }
     loadSources();
-  }, [selectedSeason, selectedEpisode, item.id, type]);
+  }, [selectedSeason, selectedEpisode, item.id, type, partyId]);
 
   if (!item) return null;
 
   const validSeasons = item.seasons?.filter((s: any) => s.season_number > 0) || [];
+
+  if (isCheckingBlacklist) {
+    return (
+      <div className="w-full h-screen flex flex-col items-center justify-center gap-4 bg-background-base">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-[#888888] text-sm">Loading media...</div>
+      </div>
+    );
+  }
+
+  if (isBlacklisted) {
+    return (
+      <div className="w-full h-screen flex flex-col items-center justify-center gap-6 bg-background-base p-6 text-center">
+        <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center">
+          <MdClose className="w-10 h-10" />
+        </div>
+        <div className="flex flex-col gap-2 max-w-md">
+          <h1 className="text-2xl font-bold text-white tracking-wide">Content Removed</h1>
+          <p className="text-[#888888] text-[15px] leading-relaxed">
+            This media has been blocked by administrators and is no longer available for streaming on DAOBAN.
+          </p>
+        </div>
+        <button 
+          onClick={() => router.push('/')}
+          className="mt-4 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors"
+        >
+          Return to Home
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-background z-50 p-0 md:p-6 flex items-center justify-center overflow-hidden">
@@ -308,29 +354,29 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
           {/* Party Chat - Now integrated in sidebar */}
 
           {!isSidebarOpen && (
-            <div className="absolute top-6 right-6 z-[60] flex gap-3">
+            <div className="absolute bottom-6 md:bottom-auto md:top-6 right-6 z-[60] flex gap-3">
               {type !== 'movie' && (
                 <button
                   onClick={() => { setIsSidebarOpen(true); setActiveTab('episodes'); }}
-                  className="px-5 py-3 flex items-center gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-xs uppercase shadow-2xl"
+                  className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
                 >
-                  <MdPlaylistPlay className="w-5 h-5" />
+                  <MdPlaylistPlay className="w-4 h-4 md:w-5 md:h-5" />
                   Episodes
                 </button>
               )}
               <button
                 onClick={() => { setIsSidebarOpen(true); setActiveTab('comments'); }}
-                className="px-5 py-3 flex items-center gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-xs uppercase shadow-2xl"
+                className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
               >
-                <MdChatBubbleOutline className="w-5 h-5" />
+                <MdChatBubbleOutline className="w-4 h-4 md:w-5 md:h-5" />
                 Discuss
               </button>
               {isInParty && partyId && (
                 <button
                   onClick={() => { setIsSidebarOpen(true); setActiveTab('party'); }}
-                  className="px-5 py-3 flex items-center gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-xs uppercase shadow-2xl"
+                  className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
                 >
-                  <Users className="w-5 h-5 text-accent" />
+                  <Users className="w-4 h-4 md:w-5 md:h-5 text-accent" />
                   Party
                 </button>
               )}
@@ -396,7 +442,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
         </div>
 
         <div
-          className={`absolute top-0 right-0 h-full w-full sm:w-[450px] bg-[rgba(10,10,10,0.95)] backdrop-blur-3xl border-l border-white/5 z-[70] flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:relative md:translate-x-0 md:w-[400px] ${!isSidebarOpen ? 'md:hidden' : 'md:flex'}`}
+          className={`w-full sm:w-[450px] bg-[rgba(10,10,10,0.95)] backdrop-blur-3xl border-t md:border-t-0 md:border-l border-white/5 z-[70] flex-col md:relative md:w-[400px] transition-all duration-300 ${isSidebarOpen ? 'flex flex-1 h-[65vh] md:h-auto' : 'hidden'}`}
         >
           <div className="flex items-center justify-between p-2 border-b border-white/5 shrink-0 bg-black/20">
             <div className="flex">

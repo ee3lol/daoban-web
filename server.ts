@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
@@ -98,6 +99,15 @@ app.prepare().then(() => {
         broadcastPresence();
       } else {
         console.log(`Warning: Received update_presence but socket ${socket.id} has no user mapping!`);
+      }
+    });
+
+    socket.on("send_notification", (userId) => {
+      // Find all sockets for this userId and emit new_notification
+      for (const [id, state] of presenceMap.entries()) {
+        if (state.userId === userId) {
+          io.to(id).emit("new_notification");
+        }
       }
     });
 

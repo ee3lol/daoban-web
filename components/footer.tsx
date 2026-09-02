@@ -7,7 +7,7 @@ export default function Footer() {
   const pathname = usePathname() || '';
   const isDetailsPage = pathname.startsWith('/movie/') || pathname.startsWith('/tv/') || pathname.startsWith('/anime/');
   
-  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends') || isDetailsPage) return null;
+  if (pathname.startsWith('/watch') || pathname.startsWith('/me') || pathname.startsWith('/social') || pathname.startsWith('/friends') || pathname.startsWith('/admin') || isDetailsPage) return null;
 
   return (
     <footer className="w-full bg-background-elevated border-t border-white/5 pt-16 pb-28 md:pb-8 relative z-50">

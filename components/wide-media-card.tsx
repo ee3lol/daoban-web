@@ -29,7 +29,7 @@ export default function WideMediaCard({ item }: { item: Movie }) {
     type = 'anime';
   }
 
-  let href = `/${type}/${item.id}`;
+  const href = `/${type}/${item.id}`;
 
   return (
     <Link

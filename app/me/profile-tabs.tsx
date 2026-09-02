@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,6 +19,7 @@ import {
   X,
   History,
   ShieldAlert,
+  ArrowLeft,
 } from "lucide-react";
 import { logout, revokeSession, revokeOtherSessions } from "@/lib/actions/user";
 import UpdatePasswordModal from "@/components/update-password-modal";
@@ -65,6 +67,7 @@ export default function ProfileTabs({
     accentColor?: string;
     filmGrain?: boolean;
     themeStyle?: string;
+    mentionPrivacy?: string;
   } | null>(null);
 
   const currentPrefs = pendingPreferences ||
@@ -72,11 +75,13 @@ export default function ProfileTabs({
     accentColor: "#fc535a",
     filmGrain: true,
     themeStyle: "dark",
+    mentionPrivacy: "anyone",
   };
   const hasUnsavedChanges =
     pendingPreferences !== null && !isSavingAppearance &&
     (pendingPreferences.accentColor !== preferences?.accentColor ||
       pendingPreferences.filmGrain !== preferences?.filmGrain ||
+      pendingPreferences.mentionPrivacy !== (preferences?.mentionPrivacy || "anyone") ||
       pendingPreferences.themeStyle !== (preferences?.themeStyle || "dark"));
 
   useEffect(() => {
@@ -122,6 +127,8 @@ export default function ProfileTabs({
       pendingPreferences.accentColor === preferences.accentColor &&
       (pendingPreferences.themeStyle || "dark") ===
       (preferences.themeStyle || "dark") &&
+      (pendingPreferences.mentionPrivacy || "anyone") ===
+      (preferences.mentionPrivacy || "anyone") &&
       (pendingPreferences.filmGrain ?? true) === (preferences.filmGrain ?? true)
     ) {
       setPendingPreferences(null);
@@ -209,7 +216,7 @@ export default function ProfileTabs({
 
       { }
       <div
-        className={`fixed inset-y-0 left-0 z-50 md:z-auto md:relative w-[280px] shrink-0 h-full bg-[#050505] md:bg-transparent md:border-r border-white/5 flex flex-col pt-12 overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${isDrawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`fixed inset-y-0 left-0 z-50 md:z-auto md:relative w-[280px] shrink-0 h-full bg-background-elevated md:bg-transparent md:border-r border-white/5 flex flex-col pt-12 overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${isDrawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         <div className="px-8 flex flex-col gap-8 pb-12">
           { }
@@ -254,8 +261,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("liked")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "liked"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <Heart
@@ -267,8 +274,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("watch_later")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "watch_later"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <Bookmark
@@ -280,8 +287,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("history")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "history"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <History
@@ -299,8 +306,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("my_account")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "my_account"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <UserIcon
@@ -312,8 +319,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("appearance")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "appearance"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <Palette
@@ -325,8 +332,8 @@ export default function ProfileTabs({
             <button
               onClick={() => handleTabClick("devices")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === "devices"
-                  ? "bg-background-light text-white"
-                  : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                ? "bg-background-light text-white"
+                : "text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
                 }`}
             >
               <MonitorSmartphone
@@ -336,12 +343,21 @@ export default function ProfileTabs({
             </button>
           </div>
 
-          <div className="border-t border-white/5 mt-4 pt-6">
-            {(user as any).role === 'admin' && (
+          <div className="border-t border-white/5 mt-4 pt-6 flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back to Site
+            </button>
+
+            {['admin', 'super_admin'].includes((user as any).role) && (
               <button
                 type="button"
                 onClick={() => router.push("/admin")}
-                className="w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-xl transition-all group text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
               >
                 <ShieldAlert className="w-4 h-4" />
                 Admin
@@ -440,7 +456,7 @@ export default function ProfileTabs({
 
                     <div className="flex flex-col gap-8">
                       <AvatarUpload user={user} />
-                      
+
                       <div>
                         <label className="block text-[#EAE8E3] text-[13px] font-semibold mb-2">
                           Username
@@ -499,6 +515,8 @@ export default function ProfileTabs({
                       </button>
                     </div>
                   </div>
+
+
                 </div>
 
                 { }
@@ -614,6 +632,60 @@ export default function ProfileTabs({
                       </div>
                     </div>
                   </div>
+
+                  {/* Privacy & Mentions */}
+                  <div className="w-full flex flex-col gap-6 py-6" style={{ opacity: isSavingAppearance ? 0.5 : 1 }}>
+                    <h3 className="text-[#888888] text-[12px] font-bold tracking-[0.1em] uppercase mb-2">
+                      Privacy & Mentions
+                    </h3>
+                    <p className="text-[#888888] text-[14px] mb-2">
+                      Control who can mention you in comments.
+                    </p>
+
+                    <div className="flex flex-col gap-3">
+                      {[
+                        { id: "anyone", label: "Anyone", desc: "Anyone can @mention you." },
+                        { id: "friends", label: "Friends Only", desc: "Only users who you are friends with can @mention you." },
+                        { id: "nobody", label: "Nobody", desc: "Disable all @mentions for your account." },
+                      ].map((opt) => {
+                        const isSelected = (currentPrefs.mentionPrivacy || "anyone") === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            disabled={isSavingAppearance}
+                            onClick={() => {
+                              setPendingPreferences((prev) => ({
+                                ...(prev || preferences || {
+                                  accentColor: "#fc535a",
+                                  filmGrain: true,
+                                  themeStyle: "dark",
+                                  mentionPrivacy: "anyone"
+                                }),
+                                mentionPrivacy: opt.id,
+                              }));
+                            }}
+                            className={`flex items-start gap-4 p-4 rounded-xl border text-left transition-all ${isSelected
+                              ? "bg-accent/10 border-accent/30"
+                              : "bg-background-light border-white/5 hover:border-white/20"
+                              }`}
+                          >
+                            <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected ? "border-accent bg-accent/20" : "border-[#444444]"
+                              }`}>
+                              {isSelected && <div className="w-2 h-2 rounded-full bg-accent" />}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className={`text-[14px] font-bold ${isSelected ? "text-accent" : "text-white"}`}>
+                                {opt.label}
+                              </span>
+                              <span className="text-[12px] text-[#888888] mt-0.5">
+                                {opt.desc}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -713,19 +785,19 @@ export default function ProfileTabs({
                       <button
                         onClick={() => setShowColorPicker(true)}
                         className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 overflow-hidden ${![
-                            "#fc535a",
-                            "#4f83cc",
-                            "#509e77",
-                            "#9b72cf",
-                            "#d4a373",
-                            "#cc4f4f",
-                          ].includes(
-                            (
-                              currentPrefs.accentColor || "#fc535a"
-                            ).toLowerCase(),
-                          )
-                            ? "ring-2 ring-white scale-110 shadow-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]"
-                            : "ring-1 ring-white/10 group-hover:ring-white/40 group-hover:scale-105 bg-background-light"
+                          "#fc535a",
+                          "#4f83cc",
+                          "#509e77",
+                          "#9b72cf",
+                          "#d4a373",
+                          "#cc4f4f",
+                        ].includes(
+                          (
+                            currentPrefs.accentColor || "#fc535a"
+                          ).toLowerCase(),
+                        )
+                          ? "ring-2 ring-white scale-110 shadow-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]"
+                          : "ring-1 ring-white/10 group-hover:ring-white/40 group-hover:scale-105 bg-background-light"
                           }`}
                         style={{
                           background: ![
@@ -764,19 +836,19 @@ export default function ProfileTabs({
                       </button>
                       <span
                         className={`text-[9px] font-bold tracking-wider text-center uppercase leading-tight transition-colors ${![
-                            "#fc535a",
-                            "#4f83cc",
-                            "#509e77",
-                            "#9b72cf",
-                            "#d4a373",
-                            "#cc4f4f",
-                          ].includes(
-                            (
-                              currentPrefs.accentColor || "#fc535a"
-                            ).toLowerCase(),
-                          )
-                            ? "text-white"
-                            : "text-[#555555] group-hover:text-[#888888]"
+                          "#fc535a",
+                          "#4f83cc",
+                          "#509e77",
+                          "#9b72cf",
+                          "#d4a373",
+                          "#cc4f4f",
+                        ].includes(
+                          (
+                            currentPrefs.accentColor || "#fc535a"
+                          ).toLowerCase(),
+                        )
+                          ? "text-white"
+                          : "text-[#555555] group-hover:text-[#888888]"
                           }`}
                       >
                         Custom

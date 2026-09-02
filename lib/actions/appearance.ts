@@ -24,13 +24,14 @@ export const getUserPreferences = cache(async () => {
     .where(eq(userPreferences.userId, session.user.id))
     .limit(1);
 
-  if (prefs.length === 0) {
+    if (prefs.length === 0) {
     
     return {
       accentColor: '#fc535a',
       themeStyle: 'dark',
       cardRadius: 'rounded-xl',
       filmGrain: true,
+      mentionPrivacy: 'anyone',
     };
   }
 
@@ -42,6 +43,7 @@ export async function updateUserPreferences(data: {
   themeStyle?: string;
   cardRadius?: string;
   filmGrain?: boolean;
+  mentionPrivacy?: string;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -66,6 +68,7 @@ export async function updateUserPreferences(data: {
         themeStyle: data.themeStyle ?? 'dark',
         cardRadius: data.cardRadius ?? 'rounded-xl',
         filmGrain: data.filmGrain ?? true,
+        mentionPrivacy: data.mentionPrivacy ?? 'anyone',
       });
     } else {
       await db
