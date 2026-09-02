@@ -15,6 +15,11 @@ export const user = pgTable('user', {
   username: text('username').unique(),
   displayUsername: text('display_username'),
   hasSetUsername: boolean('has_set_username').default(false).notNull(),
+  // Admin plugin fields
+  role: text('role').default('user'),
+  banned: boolean('banned').default(false),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires'),
 });
 
 export const session = pgTable('session', {

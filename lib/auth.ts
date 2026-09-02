@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { username } from "better-auth/plugins";
+import { admin } from "better-auth/plugins/admin";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { Resend } from 'resend';
@@ -12,6 +13,7 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  plugins: [username(), admin()],
   trustedOrigins: ["https://daoban.lol", "https://www.daoban.lol", "http://localhost:3000"],
   user: {
     additionalFields: {

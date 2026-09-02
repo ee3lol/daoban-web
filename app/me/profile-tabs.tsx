@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   History,
+  ShieldAlert,
 } from "lucide-react";
 import { logout, revokeSession, revokeOtherSessions } from "@/lib/actions/user";
 import UpdatePasswordModal from "@/components/update-password-modal";
@@ -336,6 +337,16 @@ export default function ProfileTabs({
           </div>
 
           <div className="border-t border-white/5 mt-4 pt-6">
+            {user.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => router.push("/admin")}
+                className="flex items-center gap-3 px-4 py-3 mb-2 w-full text-left font-semibold text-[13px] tracking-wide text-white hover:bg-white/5 transition-colors rounded-lg"
+              >
+                <ShieldAlert className="w-4 h-4 text-accent" />
+                Admin Dashboard
+              </button>
+            )}
             <button
               type="button"
               onClick={async () => {
