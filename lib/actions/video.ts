@@ -31,7 +31,9 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
       if (response.status === 404) {
         return { success: false, error: "No sources found for this media." };
       }
-      throw new Error(`API returned ${response.status}`);
+      const errText = await response.text();
+      console.error(`API Error Body: ${errText}`);
+      throw new Error(`API returned ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
