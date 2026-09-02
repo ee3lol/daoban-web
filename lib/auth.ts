@@ -224,5 +224,4 @@ export const auth = betterAuth({
       trustedProviders: ["google", "discord"],
     },
   },
-  plugins: [username()],
 });
