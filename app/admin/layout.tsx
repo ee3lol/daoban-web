@@ -16,7 +16,7 @@ export default async function AdminLayout({
     console.error("[AdminLayout] Failed to get session:", error);
   }
 
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user || (session.user as any).role !== "admin") {
     redirect("/");
   }
 

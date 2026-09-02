@@ -337,7 +337,7 @@ export default function ProfileTabs({
           </div>
 
           <div className="border-t border-white/5 mt-4 pt-6">
-            {user.role === 'admin' && (
+            {(user as any).role === 'admin' && (
               <button
                 type="button"
                 onClick={() => router.push("/admin")}
