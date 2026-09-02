@@ -78,7 +78,7 @@ export default function AvatarUpload({ user }: { user: any }) {
       <div className="flex flex-col">
         <h3 className="text-white text-[16px] font-bold">Profile Picture</h3>
         <p className="text-[#888888] text-[13px] mt-1 max-w-[250px]">
-          We support PNG, JPG or GIF up to 4MB. Square images work best.
+          We support PNG, JPG or GIF up to 16MB. Square images work best.
         </p>
       </div>
 

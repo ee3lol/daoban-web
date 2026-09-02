@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 const f = createUploadthing();
 
 export const ourFileRouter = {
-  profilePicture: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+  profilePicture: f({ image: { maxFileSize: "16MB", maxFileCount: 1 } })
     .middleware(async ({ req }) => {
       // Validate user is logged in
       const session = await auth.api.getSession({
