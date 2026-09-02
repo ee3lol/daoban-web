@@ -34,5 +34,28 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const resolvedParams = await params;
   const data = await getTVDetails(resolvedParams.id);
 
-  return <MediaDetails item={data} type="tv" />;
+  if (!data) return null;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TVSeries',
+    name: data.name,
+    image: getTMDBImageUrl(data.poster_path, 'original'),
+    description: data.overview,
+    dateCreated: data.first_air_date,
+    creator: {
+      '@type': 'Person',
+      name: data.created_by?.[0]?.name || 'Unknown'
+    }
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <MediaDetails item={data} type="tv" />
+    </>
+  );
 }

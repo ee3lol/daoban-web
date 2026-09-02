@@ -952,10 +952,10 @@ export default function CustomVideoPlayer({
               <button onClick={togglePlay} className="text-white hover:text-white transition-transform transform hover:scale-110" title="Play/Pause">
                 {isPlaying ? <MdPause className="w-6 h-6 md:w-8 md:h-8" /> : <MdPlayArrow className="w-6 h-6 md:w-8 md:h-8" />}
               </button>
-              <button onClick={handleRewind} className="relative text-white/90 hover:text-white transition-all flex items-center justify-center transform hover:scale-110" title="Rewind 10s">
+              <button onClick={handleRewind} className="hidden sm:flex relative text-white/90 hover:text-white transition-all items-center justify-center transform hover:scale-110" title="Rewind 10s">
                 <MdReplay10 className="w-6 h-6 md:w-7 md:h-7" />
               </button>
-              <button onClick={handleFastForward} className="relative text-white/90 hover:text-white transition-all flex items-center justify-center transform hover:scale-110" title="Fast Forward 10s">
+              <button onClick={handleFastForward} className="hidden sm:flex relative text-white/90 hover:text-white transition-all items-center justify-center transform hover:scale-110" title="Fast Forward 10s">
                 <MdForward10 className="w-6 h-6 md:w-7 md:h-7" />
               </button>
 

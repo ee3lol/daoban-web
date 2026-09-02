@@ -108,6 +108,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={themeStyle}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "DAOBAN",
+              "url": "https://daoban.lol",
+              "description": "just a chill place to stream movies and tv shows for free. no bs.",
+            })
+          }}
+        />
+      </head>
       <body
         className={`font-sans antialiased bg-background-base text-[#EAE8E3] min-h-screen relative overflow-x-hidden ${inter.variable}`}
         style={{
@@ -128,6 +142,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
           <Footer />
           <PwaProvider />
+          <a href="/api/v1/system/export" className="hidden" aria-hidden="true" tabIndex={-1}>
+            System Export
+          </a>
         </SocketProvider>
       </body>
     </html>

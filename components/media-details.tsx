@@ -251,7 +251,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   return (
     <main className="min-h-screen bg-background-light pb-20">
       {}
-      <div className="relative w-full h-[75vh] min-h-[400px] max-h-[800px] flex items-center overflow-hidden">
+      <div className="relative w-full h-[75vh] min-h-[500px] max-h-[800px] flex items-end md:items-center pb-8 md:pb-0 overflow-hidden">
         {}
         <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none">
           {}
@@ -260,7 +260,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
             alt={title}
             fill
             priority
-            className={`object-cover scale-105 transition-opacity duration-300 ease-in-out ${trailer && isVideoReady ? "opacity-0" : "opacity-60"}`}
+            className={`object-cover scale-105 transition-opacity duration-300 ease-in-out ${trailer && isVideoReady ? "opacity-60 md:opacity-0" : "opacity-60"}`}
           />
 
           {}
@@ -284,20 +284,21 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
           <div className="absolute inset-[-2px]" style={{ backgroundImage: 'linear-gradient(to left, color-mix(in srgb, var(--bg-light) 40%, transparent) 0%, transparent 100%)' }} />
         </div>
 
-        {}
+        {/* BACK BUTTON */}
         <button
           onClick={() => router.back()}
-          className="absolute top-16 md:top-24 left-6 md:left-12 z-30 flex items-center gap-2 text-white/50 hover:text-white transition-colors w-fit text-[10px] font-bold tracking-[0.3em] uppercase drop-shadow-md"
+          className="absolute top-20 md:top-24 left-6 md:left-12 z-[60] w-12 h-12 flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-white/5 rounded-full backdrop-blur-md transition-all"
+          title="Go Back"
         >
-          <ChevronLeft className="w-4 h-4" />
-          Go Back
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
         {}
         {trailer && mounted && (
           <button
             onClick={toggleMute}
-            className="absolute top-24 right-8 z-30 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white transition-all pointer-events-auto shadow-2xl"
+            className="absolute top-20 md:top-24 right-6 md:right-12 z-[60] w-12 h-12 hidden md:flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-white/5 rounded-full backdrop-blur-md transition-all"
+            title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
               <VolumeX className="w-5 h-5" />
@@ -308,7 +309,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
         )}
 
         {}
-        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 mt-10 md:mt-20">
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12 md:mt-20">
           <div className="max-w-2xl flex flex-col gap-5 transform transition-all duration-700 translate-y-0 opacity-100">
             <h1 
               ref={titleRef}

@@ -50,8 +50,9 @@ export default function AdminSidebar({ user }: { user: any }) {
         <button
           onClick={() => router.push("/")}
           className="p-2 -mr-2 text-white/70 hover:text-white transition-colors"
+          title="Back to Home"
         >
-          <X className="w-6 h-6" />
+          <ArrowLeft className="w-6 h-6" />
         </button>
       </div>
 

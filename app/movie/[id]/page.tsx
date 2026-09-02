@@ -34,5 +34,28 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   const resolvedParams = await params;
   const data = await getMovieDetails(resolvedParams.id);
 
-  return <MediaDetails item={data} type="movie" />;
+  if (!data) return null;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Movie',
+    name: data.title,
+    image: getTMDBImageUrl(data.poster_path, 'original'),
+    description: data.overview,
+    dateCreated: data.release_date,
+    director: {
+      '@type': 'Person',
+      name: data.credits?.crew?.find((c: any) => c.job === 'Director')?.name || 'Unknown'
+    }
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <MediaDetails item={data} type="movie" />
+    </>
+  );
 }

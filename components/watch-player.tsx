@@ -354,30 +354,33 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
           {/* Party Chat - Now integrated in sidebar */}
 
           {!isSidebarOpen && (
-            <div className="absolute bottom-6 md:bottom-auto md:top-6 right-6 z-[60] flex gap-3">
+            <div className="absolute top-6 right-6 md:top-6 md:right-6 z-[60] flex flex-col md:flex-row gap-2 md:gap-3 items-end">
               {type !== 'movie' && (
                 <button
                   onClick={() => { setIsSidebarOpen(true); setActiveTab('episodes'); }}
-                  className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
+                  className="px-3 py-2.5 md:px-5 md:py-3 flex items-center justify-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all shadow-2xl"
+                  title="Episodes"
                 >
-                  <MdPlaylistPlay className="w-4 h-4 md:w-5 md:h-5" />
-                  Episodes
+                  <MdPlaylistPlay className="w-5 h-5" />
+                  <span className="hidden md:inline font-bold tracking-widest text-xs uppercase">Episodes</span>
                 </button>
               )}
               <button
                 onClick={() => { setIsSidebarOpen(true); setActiveTab('comments'); }}
-                className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
+                className="px-3 py-2.5 md:px-5 md:py-3 flex items-center justify-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all shadow-2xl"
+                title="Discuss"
               >
-                <MdChatBubbleOutline className="w-4 h-4 md:w-5 md:h-5" />
-                Discuss
+                <MdChatBubbleOutline className="w-5 h-5" />
+                <span className="hidden md:inline font-bold tracking-widest text-xs uppercase">Discuss</span>
               </button>
               {isInParty && partyId && (
                 <button
                   onClick={() => { setIsSidebarOpen(true); setActiveTab('party'); }}
-                  className="px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all font-bold tracking-widest text-[10px] md:text-xs uppercase shadow-2xl"
+                  className="px-3 py-2.5 md:px-5 md:py-3 flex items-center justify-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all shadow-2xl"
+                  title="Party"
                 >
-                  <Users className="w-4 h-4 md:w-5 md:h-5 text-accent" />
-                  Party
+                  <Users className="w-5 h-5 text-accent" />
+                  <span className="hidden md:inline font-bold tracking-widest text-xs uppercase">Party</span>
                 </button>
               )}
             </div>
