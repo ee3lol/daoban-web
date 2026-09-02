@@ -341,10 +341,10 @@ export default function ProfileTabs({
               <button
                 type="button"
                 onClick={() => router.push("/admin")}
-                className="flex items-center gap-3 px-4 py-3 mb-2 w-full text-left font-semibold text-[13px] tracking-wide text-white hover:bg-white/5 transition-colors rounded-lg"
+                className="w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-xl transition-all group text-[#888888] hover:text-[#EAE8E3] hover:bg-white/5"
               >
-                <ShieldAlert className="w-4 h-4 text-accent" />
-                Admin Dashboard
+                <ShieldAlert className="w-4 h-4" />
+                Admin
               </button>
             )}
             <button
