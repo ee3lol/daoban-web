@@ -255,10 +255,16 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
       setIsSourcesLoading(true);
       setVideoSources([]);
 
-      const actualType = (type === 'tv' && item?.original_language === 'ja' && item?.genres?.some((g: any) => g.name === 'Animation')) ? 'anime' : type;
+      let actualType: 'movie' | 'tv' | 'anime' | 'anime-movie' = type;
+      if (item?.original_language === 'ja' && item?.genres?.some((g: any) => g.name === 'Animation')) {
+        actualType = type === 'movie' ? 'anime-movie' : 'anime';
+      }
+
+      const requestSeason = actualType === 'anime' ? (selectedSeason || 1) : selectedSeason;
+      const requestEpisode = actualType === 'anime' ? (selectedEpisode || 1) : selectedEpisode;
 
       const [res, progress] = await Promise.all([
-        fetchVideoSources(actualType, item.id, selectedSeason, selectedEpisode),
+        fetchVideoSources(actualType, item.id, requestSeason, requestEpisode),
         getMediaProgress(item.id, type, type === 'movie' ? undefined : selectedSeason, type === 'movie' ? undefined : selectedEpisode)
       ]);
 

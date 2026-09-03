@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: number, season?: number, episode?: number) {
+export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime' | 'anime-movie', tmdbId: number, season?: number, episode?: number) {
   try {
     const apiKey = process.env.DAOBAN_API_KEY;
     if (!apiKey) {
@@ -10,7 +10,10 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
 
     const baseUrl = process.env.BASE_DAOBAN_API_URL || process.env.DAOBAN_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.daoban.lol' : 'http://localhost:3001');
     let url = `${baseUrl}/api/movie/${tmdbId}`;
-    if (type === 'tv' || type === 'anime') {
+    
+    if (type === 'anime-movie') {
+      url = `${baseUrl}/api/movie/${tmdbId}?type=anime`;
+    } else if (type === 'tv' || type === 'anime') {
       if (!season || !episode) throw new Error("Season and episode required for TV/Anime.");
       url = `${baseUrl}/api/tv/${tmdbId}/${season}/${episode}?type=${type}`;
     }
