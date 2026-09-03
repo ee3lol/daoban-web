@@ -12,7 +12,7 @@ export async function fetchVideoSources(type: 'movie' | 'tv' | 'anime', tmdbId: 
     let url = `${baseUrl}/api/movie/${tmdbId}`;
     if (type === 'tv' || type === 'anime') {
       if (!season || !episode) throw new Error("Season and episode required for TV/Anime.");
-      url = `${baseUrl}/api/tv/${tmdbId}/${season}/${episode}`;
+      url = `${baseUrl}/api/tv/${tmdbId}/${season}/${episode}?type=${type}`;
     }
 
     console.log(`[fetchVideoSources] Trying to fetch from: ${url}`);

@@ -19,6 +19,7 @@ interface VideoSource {
   isMP4: boolean;
   serverName: string;
   language?: string;
+  audioType?: string;
   headers?: Record<string, string>;
   subtitles?: Subtitle[];
 }
@@ -82,7 +83,7 @@ export default function CustomVideoPlayer({
   const [currentAudioTrack, setCurrentAudioTrack] = useState<number>(-1);
   const [hlsSubtitles, setHlsSubtitles] = useState<any[]>([]);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [settingsView, setSettingsView] = useState<'main' | 'source' | 'quality' | 'audio' | 'speed'>('main');
+  const [settingsView, setSettingsView] = useState<'main' | 'source' | 'quality' | 'audio' | 'speed' | 'audioType'>('main');
   const [showSettings, setShowSettings] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   
@@ -1083,6 +1084,16 @@ export default function CustomVideoPlayer({
                           <span className="text-white/50 text-xs">{playbackRate}x &gt;</span>
                         </button>
                         
+                        {sources.some((s) => s.audioType === 'sub') && sources.some((s) => s.audioType === 'dub') && (
+                          <button
+                            onClick={() => setSettingsView('audioType')}
+                            className="flex items-center justify-between px-4 py-2.5 text-sm transition-all hover:bg-white/10 text-white/90"
+                          >
+                            <span>Language</span>
+                            <span className="text-white/50 text-xs truncate max-w-[100px]">{sources[activeSourceIndex]?.audioType === 'dub' ? 'Dub' : 'Sub'} &gt;</span>
+                          </button>
+                        )}
+                        
                         {audioTracks.length > 1 && (
                           <button
                             onClick={() => setSettingsView('audio')}
@@ -1171,13 +1182,38 @@ export default function CustomVideoPlayer({
                           <span className="text-[11px] font-bold tracking-wider text-white uppercase">Speed</span>
                         </div>
                         <div className="flex flex-col py-2 max-h-[30vh] overflow-y-auto custom-scrollbar">
-                          {[0.5, 1, 1.25, 1.5, 2].map((speed) => (
+                          {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
                             <button
                               key={speed}
                               onClick={() => { handleSpeedChange(speed); setShowSettings(false); setSettingsView('main'); }}
                               className={`text-left px-6 py-2.5 text-sm transition-all hover:bg-white/10 ${playbackRate === speed ? 'text-accent bg-white/10 font-bold' : 'text-white/70'}`}
                             >
-                              {speed}x
+                              {speed === 1 ? 'Normal' : `${speed}x`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {settingsView === 'audioType' && (
+                      <div className="flex flex-col animate-in slide-in-from-right-4 duration-200">
+                        <div className="px-4 py-3 border-b border-white/10 shrink-0 flex items-center gap-2">
+                          <button onClick={() => setSettingsView('main')} className="text-white/70 hover:text-white"><ChevronLeft className="w-4 h-4" /></button>
+                          <span className="text-[11px] font-bold tracking-wider text-white uppercase">Language</span>
+                        </div>
+                        <div className="flex flex-col py-2 max-h-[30vh] overflow-y-auto custom-scrollbar">
+                          {Array.from(new Set(sources.map((s) => s.audioType).filter(Boolean))).map((type) => (
+                            <button
+                              key={type as string}
+                              onClick={() => {
+                                const newIndex = sources.findIndex((s) => s.audioType === type);
+                                if (newIndex !== -1) setActiveSourceIndex(newIndex);
+                                setShowSettings(false);
+                                setSettingsView('main');
+                              }}
+                              className={`text-left px-6 py-2.5 text-sm transition-all hover:bg-white/10 ${sources[activeSourceIndex]?.audioType === type ? 'text-accent bg-white/10 font-bold' : 'text-white/70'}`}
+                            >
+                              {type === 'dub' ? 'Dub' : 'Sub'}
                             </button>
                           ))}
                         </div>

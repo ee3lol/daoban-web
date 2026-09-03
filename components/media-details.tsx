@@ -127,6 +127,8 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
   }, [isPartyModalOpen, session?.user, presenceState]);
 
   const title = item?.title || item?.name;
+  const isAnime = item?.original_language === 'ja' && item?.genres?.some((g: any) => g.name === 'Animation');
+  const linkType = isAnime ? 'anime' : type;
 
   useEffect(() => {
     const checkTruncation = () => {
@@ -372,7 +374,7 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
             <div className="flex flex-col sm:flex-row items-center sm:items-start w-full gap-4 mt-6">
               {}
               <Link
-                href={`/watch/${type}/${item.id}`}
+                href={`/watch/${linkType}/${item.id}`}
                 className="w-full sm:w-auto shrink-0 group flex items-center justify-center gap-3 px-8 py-3.5 sm:py-4 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[13px] tracking-widest transition-all duration-300 active:scale-95 whitespace-nowrap"
               >
                 <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform duration-300" />
@@ -549,9 +551,9 @@ export default function MediaDetails({ item, type }: MediaDetailsProps) {
                       : ep.runtime ? `${ep.runtime}m` : null;
 
                     return (
-                      <Link
+                      <Link 
                         key={ep.id}
-                        href={`/watch/${type}/${item.id}?season=${selectedSeason}&episode=${ep.episode_number}`}
+                        href={`/watch/${linkType}/${item.id}?season=${selectedSeason}&episode=${ep.episode_number}`}
                         className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-2xl border border-white/5 bg-black/20 hover:bg-white/5 transition-all duration-300 group"
                       >
                         {}

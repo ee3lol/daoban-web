@@ -161,6 +161,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 ).split("-")[0];
                 const type = item.media_type === "movie" ? "Movie" : "TV Show";
                 const isExpanded = expandedId === item.id;
+                const isAnime = item.original_language === 'ja' && item.genre_ids?.includes(16);
+                const linkType = isAnime ? 'anime' : item.media_type;
 
                 return (
                   <div
@@ -227,7 +229,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       className={`${isExpanded ? "flex pt-2 w-full" : "hidden"} sm:flex items-center gap-2 w-full sm:w-auto opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                     >
                       <Link
-                        href={`/watch/${item.media_type}/${item.id}`}
+                        href={`/watch/${linkType}/${item.id}`}
                         onClick={onClose}
                         className="group/btn flex items-center justify-center gap-2 px-6 py-2.5 bg-accent text-accent-foreground hover:brightness-110 rounded-full font-bold text-[11px] tracking-widest uppercase transition-all duration-300 active:scale-95 flex-1 sm:flex-none"
                       >
