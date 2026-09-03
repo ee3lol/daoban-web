@@ -12,7 +12,9 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
   });
 
   if (!res.ok) {
-    console.error(`Failed to fetch TMDB endpoint: ${endpoint}`, await res.text());
+    if (res.status !== 404) {
+      console.error(`Failed to fetch TMDB endpoint: ${endpoint}`, await res.text());
+    }
     return { results: [] };
   }
 

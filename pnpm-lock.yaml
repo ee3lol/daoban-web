@@ -26,6 +26,9 @@ importers:
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
+      daoban:
+        specifier: 'link:'
+        version: 'link:'
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@neondatabase/serverless@1.1.0)(kysely@0.29.5)

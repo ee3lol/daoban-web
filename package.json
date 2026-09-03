@@ -18,6 +18,7 @@
     "axios-retry": "^4.5.0",
     "better-auth": "^1.7.1",
     "cheerio": "^1.2.0",
+    "daoban": "link:",
     "drizzle-orm": "^0.45.2",
     "emoji-picker-react": "^4.19.1",
     "framer-motion": "^13.1.1",
