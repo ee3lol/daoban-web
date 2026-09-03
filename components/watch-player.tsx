@@ -66,55 +66,71 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
   const [partyPassword, setPartyPassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
   const [partyHostId, setPartyHostId] = useState<string | null>(null);
-  const [partyMembers, setPartyMembers] = useState<{ id: string, name: string, image?: string }[]>([]);
+  const [partyMembers, setPartyMembers] = useState<{ id: string, name: string, image?: string, role?: string }[]>([]);
   const [partySettings, setPartySettings] = useState({ anyoneCanControl: false });
   const [partyMessages, setPartyMessages] = useState<any[]>([]);
+  const [unreadPartyMessages, setUnreadPartyMessages] = useState(false);
 
   const isHost = session?.user?.id === partyHostId;
+  const isDJ = useMemo(() => {
+    const me = partyMembers.find(m => m.id === session?.user?.id);
+    return me?.role === 'dj';
+  }, [partyMembers, session?.user?.id]);
+  const canControlParty = isHost || isDJ || partySettings.anyoneCanControl;
+  
+  const isHostPresent = useMemo(() => {
+    return partyMembers.some(m => m.id === partyHostId);
+  }, [partyMembers, partyHostId]);
+
+  // Track if a media change was initiated locally to avoid feedback loops
+  const isLocalMediaChange = useRef(false);
 
   useEffect(() => {
-    if (isInParty && isHost && socket) {
+    if (isInParty && canControlParty && socket && isLocalMediaChange.current) {
       socket.emit("party_change_media", { partyId, season: selectedSeason, episode: selectedEpisode });
+      isLocalMediaChange.current = false;
     }
-  }, [selectedSeason, selectedEpisode, isInParty, isHost, socket, partyId]);
+  }, [selectedSeason, selectedEpisode, isInParty, canControlParty, socket, partyId]);
 
   useEffect(() => {
-    if (!socket || !isInParty || isHost) return;
+    if (!socket || !isInParty) return;
+    
     const handleChangeMedia = (data: any) => {
+      // Don't override if we just made a local change
+      if (isLocalMediaChange.current) return;
       if (data.season && data.season !== selectedSeason) setSelectedSeason(data.season);
       if (data.episode && data.episode !== selectedEpisode) setSelectedEpisode(data.episode);
     };
+    
+    const handleMessage = (data: any) => {
+      setPartyMessages(prev => {
+        const next = [...prev, data];
+        if (next.length > 50) next.shift();
+        return next;
+      });
+      if (!isSidebarOpen || activeTab !== 'party') {
+        setUnreadPartyMessages(true);
+      }
+    };
+
     socket.on("party_change_media", handleChangeMedia);
+    socket.on("party_chat_message", handleMessage);
+    
     return () => {
       socket.off("party_change_media", handleChangeMedia);
+      socket.off("party_chat_message", handleMessage);
     };
-  }, [socket, isInParty, isHost, selectedSeason, selectedEpisode]);
+  }, [socket, isInParty, selectedSeason, selectedEpisode, isSidebarOpen, activeTab]);
+
+  useEffect(() => {
+    if (isSidebarOpen && activeTab === 'party') {
+      setUnreadPartyMessages(false);
+    }
+  }, [isSidebarOpen, activeTab]);
 
   useEffect(() => {
     if (isConnected && socket && partyId && session?.user && !isInParty) {
-      socket.emit("join_party", {
-        partyId,
-        userId: session.user.id,
-        userName: session.user.name || session.user.username || "Guest",
-        userImage: session.user.image,
-        password: partyPassword || undefined
-      }, (res: any) => {
-        if (res.success) {
-          setIsInParty(true);
-          setNeedsPassword(false);
-          setPartyError(null);
-          setPartyHostId(res.hostId);
-          setPartyMembers(res.members || []);
-          if (res.settings) setPartySettings(res.settings);
-          if (res.messages) setPartyMessages(res.messages);
-        } else {
-          if (res.error === "Invalid password") {
-            setNeedsPassword(true);
-          } else {
-            setPartyError(res.error);
-          }
-        }
-      });
+      setPartyError("Watch Parties are currently under development.");
     }
   }, [isConnected, socket, partyId, session?.user, partyPassword, isInParty]);
 
@@ -347,7 +363,20 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
           {partyError && (
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-6">
               <div className="bg-background-elevated border border-red-500/20 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center gap-4 text-center">
-                <h3 className="text-red-500 font-bold tracking-widest uppercase">Connection Failed</h3>
+                {partyError === "Watch Parties are currently under development." ? (
+                  <>
+                    <Image 
+                      src="/stickers/ugh.png" 
+                      alt="Under Development" 
+                      width={96}
+                      height={96}
+                      className="w-24 h-24 object-contain mb-2"
+                    />
+                    <h3 className="text-white font-bold tracking-widest uppercase">Under Development</h3>
+                  </>
+                ) : (
+                  <h3 className="text-red-500 font-bold tracking-widest uppercase">Connection Failed</h3>
+                )}
                 <p className="text-muted text-sm">{partyError}</p>
                 <button
                   onClick={() => router.push(`/watch/${type}/${item.id}`)}
@@ -384,11 +413,14 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               {isInParty && partyId && (
                 <button
                   onClick={() => { setIsSidebarOpen(true); setActiveTab('party'); }}
-                  className="px-3 py-2.5 md:px-5 md:py-3 flex items-center justify-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all shadow-2xl"
+                  className="relative px-3 py-2.5 md:px-5 md:py-3 flex items-center justify-center gap-2 md:gap-3 text-white/70 hover:text-white bg-black/60 hover:bg-black/80 rounded-xl backdrop-blur-xl border border-white/10 transition-all shadow-2xl"
                   title="Party"
                 >
                   <Users className="w-5 h-5 text-accent" />
                   <span className="hidden md:inline font-bold tracking-widest text-xs uppercase">Party</span>
+                  {unreadPartyMessages && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-black rounded-full animate-pulse" />
+                  )}
                 </button>
               )}
             </div>
@@ -410,6 +442,8 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               partyId={partyId}
               isInParty={isInParty}
               isHost={isHost}
+              canControlParty={canControlParty}
+              isHostPresent={isHostPresent}
               partySettings={partySettings}
               userId={session?.user?.id}
               itemTitle={item.name || item.title}
@@ -474,9 +508,12 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               {isInParty && partyId && (
                 <button
                   onClick={() => setActiveTab('party')}
-                  className={`px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'party' ? 'text-accent border-b-2 border-accent' : 'text-muted hover:text-white'}`}
+                  className={`relative px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'party' ? 'text-accent border-b-2 border-accent' : 'text-muted hover:text-white'}`}
                 >
                   Party
+                  {unreadPartyMessages && activeTab !== 'party' && (
+                    <span className="absolute top-[14px] right-[6px] w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
                 </button>
               )}
             </div>
@@ -514,6 +551,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
                           <button
                             key={season.id}
                             onClick={() => {
+                              isLocalMediaChange.current = true;
                               setSelectedSeason(season.season_number);
                               setIsSeasonDropdownOpen(false);
                             }}
@@ -540,6 +578,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
                         <button
                           key={ep.id}
                           onClick={() => {
+                            isLocalMediaChange.current = true;
                             setSelectedEpisode(ep.episode_number);
 
                             if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -608,8 +647,8 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
             )}
 
             {/* Party Chat Tab */}
-            {activeTab === 'party' && isInParty && session?.user && partyId && (
-              <div className="absolute inset-0 h-full bg-background-elevated/90 backdrop-blur-md">
+            {isInParty && session?.user && partyId && (
+              <div className={`absolute inset-0 h-full bg-background-elevated/90 backdrop-blur-md ${activeTab === 'party' ? 'block z-20' : 'hidden z-[-1]'}`}>
                 <PartyChat
                   partyId={partyId}
                   userId={session.user.id}

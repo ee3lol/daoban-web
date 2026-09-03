@@ -1,5 +1,6 @@
 import { getTVDetails, getTMDBImageUrl } from '@/lib/tmdb';
 import MediaDetails from '@/components/media-details';
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -34,7 +35,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const resolvedParams = await params;
   const data = await getTVDetails(resolvedParams.id);
 
-  if (!data) return null;
+  if (!data || !data.name) notFound();
 
   const jsonLd = {
     '@context': 'https://schema.org',

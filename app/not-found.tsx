@@ -17,9 +17,16 @@ export default function NotFound() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/50 via-transparent to-transparent" />
       </div>
 
-      {}
+      {/* Foreground Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl mt-20">
-        <h1 className="text-[120px] md:text-[180px] font-black text-accent leading-none tracking-tighter opacity-90 drop-shadow-2xl">
+        <Image
+          src="/stickers/dead.png"
+          alt="Dead"
+          width={128}
+          height={128}
+          className="object-contain mb-4"
+        />
+        <h1 className="text-[80px] md:text-[120px] font-bold text-accent leading-none tracking-tighter opacity-90 drop-shadow-2xl">
           404
         </h1>
         

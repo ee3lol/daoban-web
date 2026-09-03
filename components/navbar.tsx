@@ -165,8 +165,8 @@ export default function Navbar({ user }: { user?: { image?: string | null; name?
       <div className="hidden md:flex fixed top-8 left-0 right-0 z-50 justify-center px-6 pointer-events-none">
         <nav
           className={`flex items-center justify-between w-full max-w-5xl px-8 py-4 rounded-[16px] transition-all duration-500 relative border pointer-events-auto ${isScrolled
-              ? 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.05)] backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.1)]'
-              : 'bg-transparent border-transparent'
+            ? 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.05)] backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.1)]'
+            : 'bg-transparent border-transparent'
             }`}
         >
           { }

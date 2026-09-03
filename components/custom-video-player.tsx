@@ -38,13 +38,15 @@ interface CustomVideoPlayerProps {
   itemMetadata?: string;
   itemLogo?: string;
   isHost?: boolean;
+  canControlParty?: boolean;
+  isHostPresent?: boolean;
   partySettings?: { anyoneCanControl: boolean };
   userId?: string;
 }
 
-export default function CustomVideoPlayer({ 
-  sources, 
-  poster, 
+export default function CustomVideoPlayer({
+  sources,
+  poster,
   autoPlay = true,
   initialTime = 0,
   onProgress,
@@ -56,6 +58,8 @@ export default function CustomVideoPlayer({
   itemMetadata,
   itemLogo,
   isHost,
+  canControlParty = true,
+  isHostPresent = true,
   partySettings,
   userId
 }: CustomVideoPlayerProps) {
@@ -68,6 +72,7 @@ export default function CustomVideoPlayer({
   const pendingSyncPlay = useRef<boolean>(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const canControl = !isInParty || canControlParty;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -78,7 +83,7 @@ export default function CustomVideoPlayer({
   const lastProgressUpdate = useRef(0);
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [qualities, setQualities] = useState<any[]>([]);
-  const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1); 
+  const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
   const [audioTracks, setAudioTracks] = useState<any[]>([]);
   const [currentAudioTrack, setCurrentAudioTrack] = useState<number>(-1);
   const [hlsSubtitles, setHlsSubtitles] = useState<any[]>([]);
@@ -86,10 +91,14 @@ export default function CustomVideoPlayer({
   const [settingsView, setSettingsView] = useState<'main' | 'source' | 'quality' | 'audio' | 'speed' | 'audioType'>('main');
   const [showSettings, setShowSettings] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
+  const [seekRipple, setSeekRipple] = useState<'left' | 'right' | null>(null);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
   
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const isRemoteAction = useRef(false);
+  const isDraggingRef = useRef(false);
 
   const initAudio = () => {
     if (!audioCtxRef.current && videoRef.current) {
@@ -99,7 +108,7 @@ export default function CustomVideoPlayer({
         const source = ctx.createMediaElementSource(videoRef.current);
         const gainNode = ctx.createGain();
         gainNode.gain.value = isMuted ? 0 : volume * 2;
-        
+
         // Add a compressor to act as a limiter and prevent audio clipping/distortion
         const compressor = ctx.createDynamicsCompressor();
         compressor.threshold.value = -5;
@@ -111,7 +120,7 @@ export default function CustomVideoPlayer({
         source.connect(gainNode);
         gainNode.connect(compressor);
         compressor.connect(ctx.destination);
-        
+
         audioCtxRef.current = ctx;
         gainNodeRef.current = gainNode;
       } catch (e) {
@@ -125,108 +134,76 @@ export default function CustomVideoPlayer({
 
   const emitPartyAction = (type: 'PLAY' | 'PAUSE' | 'SEEK', time?: number) => {
     if (!socket || !isInParty || !partyId || isRemoteAction.current) return;
-    socket.emit("party_action", { partyId, type, time });
+    const currentTime = time ?? videoRef.current?.currentTime ?? 0;
+
+    if (type === 'PLAY') {
+      socket.emit("party_play", { partyId, time: currentTime });
+    } else if (type === 'PAUSE') {
+      socket.emit("party_pause", { partyId, time: currentTime });
+    } else if (type === 'SEEK') {
+      socket.emit("party_seek", { partyId, time: currentTime });
+    }
   };
 
   useEffect(() => {
     if (!socket || !isInParty || !partyId) return;
 
-    const handlePartyAction = (data: any) => {
+    const handleStateUpdate = (state: any) => {
       if (!videoRef.current) return;
-      
-      isRemoteAction.current = true;
-      
+
+      setHasReceivedInitialSync(true);
+
+      const expectedTime = state.time;
+
+      const drift = Math.abs(videoRef.current.currentTime - expectedTime);
+
+      let actionTaken = false;
       try {
-        if (data.type === 'PLAY') {
-          if (data.time !== undefined && Math.abs(videoRef.current.currentTime - data.time) > 2) {
-            videoRef.current.currentTime = data.time;
+        if (drift > 1.5) {
+          // If we just loaded the video, it might not be ready yet
+          if (videoRef.current.readyState >= 1) {
+            actionTaken = true;
+            isRemoteAction.current = true;
+            videoRef.current.currentTime = expectedTime;
+          } else {
+            pendingSyncTime.current = expectedTime;
+            pendingSyncPlay.current = state.isPlaying;
           }
-          videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
-        } else if (data.type === 'PAUSE') {
-          videoRef.current.pause();
-        } else if (data.type === 'SEEK') {
-          videoRef.current.currentTime = data.time;
+        }
+
+        if (videoRef.current.readyState >= 1) {
+          if (state.isPlaying && videoRef.current.paused) {
+            actionTaken = true;
+            isRemoteAction.current = true;
+            videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
+          } else if (!state.isPlaying && !videoRef.current.paused) {
+            actionTaken = true;
+            isRemoteAction.current = true;
+            videoRef.current.pause();
+          }
         }
       } catch (err) {
         console.error("Party sync error", err);
       }
-      
-      setTimeout(() => { isRemoteAction.current = false; }, 500);
+
+      if (actionTaken) {
+        if ((window as any).remoteActionTimeout) clearTimeout((window as any).remoteActionTimeout);
+        (window as any).remoteActionTimeout = setTimeout(() => { isRemoteAction.current = false; }, 3000);
+      }
     };
 
-    socket.on("party_action", handlePartyAction);
+    socket.on("party_state_update", handleStateUpdate);
+    socket.emit("request_party_state", partyId);
+
+    const syncInterval = setInterval(() => {
+      socket.emit("request_party_state", partyId);
+    }, 5000);
+
     return () => {
-      socket.off("party_action", handlePartyAction);
+      socket.off("party_state_update", handleStateUpdate);
+      clearInterval(syncInterval);
     };
   }, [socket, isInParty, partyId]);
-
-  useEffect(() => {
-    if (!socket || !isInParty || !partyId) return;
-
-    const handleRequestSync = (data: any) => {
-      if (isHost && videoRef.current) {
-         socket.emit("sync_state", {
-           targetSocketId: data.targetSocketId,
-           time: videoRef.current.currentTime,
-           isPlaying: !videoRef.current.paused
-         });
-      }
-    };
-
-    const handleSyncState = (data: any) => {
-      if (!isHost && videoRef.current) {
-        setHasReceivedInitialSync(true);
-        isRemoteAction.current = true;
-        
-        if (videoRef.current.readyState >= 1) {
-          if (data.time !== undefined) {
-             videoRef.current.currentTime = data.time;
-          }
-          if (data.isPlaying) {
-             videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
-          } else {
-             videoRef.current.pause();
-          }
-        } else {
-          pendingSyncTime.current = data.time;
-          pendingSyncPlay.current = data.isPlaying;
-        }
-        
-        setTimeout(() => { isRemoteAction.current = false; }, 500);
-      }
-    };
-
-    const handleSyncUpdate = (data: any) => {
-      if (!isHost && videoRef.current) {
-        setHasReceivedInitialSync(true);
-        const drift = Math.abs(videoRef.current.currentTime - data.time);
-        if (drift > 2) {
-           isRemoteAction.current = true;
-           videoRef.current.currentTime = data.time;
-           if (data.isPlaying && videoRef.current.paused) {
-             videoRef.current.play().catch(e => console.warn("Remote play blocked:", e));
-           } else if (!data.isPlaying && !videoRef.current.paused) {
-             videoRef.current.pause();
-           }
-           setTimeout(() => { isRemoteAction.current = false; }, 500);
-        }
-      }
-    };
-
-    socket.on("request_sync", handleRequestSync);
-    socket.on("sync_state", handleSyncState);
-    socket.on("party_sync_update", handleSyncUpdate);
-
-    if (!isHost) {
-      socket.emit("request_sync", { partyId });
-    }
-
-    return () => {
-      socket.off("request_sync", handleRequestSync);
-      socket.off("sync_state", handleSyncState);
-      socket.off("party_sync_update", handleSyncUpdate);
-    };
-  }, [socket, isInParty, partyId, isHost]);
   const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -247,7 +224,7 @@ export default function CustomVideoPlayer({
 
   const activeSource = sources[activeSourceIndex];
   const vttSubtitles = activeSource?.subtitles?.filter((sub: any) => sub.format === 'vtt') || [];
-  
+
   // Combine native HLS subtitles and VTT subtitles
   const allSubtitles = useMemo(() => {
     const combined: any[] = [...vttSubtitles];
@@ -300,7 +277,7 @@ export default function CustomVideoPlayer({
     const safePlay = () => {
       if (videoRef.current) {
         if (isInParty && !isHost && !hasReceivedInitialSync && !pendingSyncPlay.current) {
-           return;
+          return;
         }
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
@@ -327,11 +304,11 @@ export default function CustomVideoPlayer({
         enableWorker: true,
         maxBufferLength: 30,
       };
-      
+
       if (!isInParty && initialTime > 0) {
         hlsConfig.startPosition = initialTime;
       }
-      
+
       const hls = new Hls(hlsConfig);
       hlsRef.current = hls;
 
@@ -357,7 +334,7 @@ export default function CustomVideoPlayer({
             maxBitrate = level.bitrate;
           }
         });
-        
+
         if (highestIndex !== -1) {
           hls.currentLevel = highestIndex;
           setCurrentQualityIndex(highestIndex);
@@ -370,7 +347,7 @@ export default function CustomVideoPlayer({
         setAudioTracks(hls.audioTracks || []);
         setCurrentAudioTrack(hls.audioTrack);
       });
-      
+
       hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (event, data) => {
         setCurrentAudioTrack(data.id);
       });
@@ -384,7 +361,7 @@ export default function CustomVideoPlayer({
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               console.warn("HLS Network Error, attempting to recover...", data);
-              
+
               if (activeSourceIndex < sources.length - 1) {
                 console.log(`Failing over to source index ${activeSourceIndex + 1}`);
                 setActiveSourceIndex(activeSourceIndex + 1);
@@ -411,12 +388,12 @@ export default function CustomVideoPlayer({
       });
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
       const streamUrl = activeSource.url;
-      
+
       videoRef.current.src = streamUrl;
       if (autoPlay) safePlay();
     } else if (activeSource.isMP4) {
       videoRef.current.src = activeSource.url;
-      
+
       videoRef.current.onloadedmetadata = () => {
         if (autoPlay) safePlay();
       };
@@ -444,7 +421,7 @@ export default function CustomVideoPlayer({
   }, [activeSource, autoPlay]);
 
   const togglePlay = () => {
-    if (isBuffering) return; 
+    if (isBuffering || !canControl) return;
 
     if (videoRef.current) {
       if (isPlaying) {
@@ -509,10 +486,14 @@ export default function CustomVideoPlayer({
     if (videoRef.current && progressRef.current) {
       const currentTime = videoRef.current.currentTime;
       const duration = videoRef.current.duration;
-      const p = (currentTime / duration) * 100;
-      progressRef.current.value = (p || 0).toString();
-      if (progressFillRef.current) progressFillRef.current.style.width = `${p || 0}%`;
-      if (progressThumbRef.current) progressThumbRef.current.style.left = `${p || 0}%`;
+      
+      if (!isDraggingRef.current) {
+        const p = (currentTime / duration) * 100;
+        progressRef.current.value = (p || 0).toString();
+        if (progressFillRef.current) progressFillRef.current.style.width = `${p || 0}%`;
+        if (progressThumbRef.current) progressThumbRef.current.style.left = `${p || 0}%`;
+      }
+      
       setCurrentTime(currentTime);
       setDuration(duration);
 
@@ -523,22 +504,54 @@ export default function CustomVideoPlayer({
     }
   };
 
+  const handleSeekStart = () => {
+    isDraggingRef.current = true;
+  };
+
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canControl) return;
     const val = parseFloat(e.target.value);
-    if (videoRef.current) {
+    
+    if (progressFillRef.current) progressFillRef.current.style.width = `${val}%`;
+    if (progressThumbRef.current) progressThumbRef.current.style.left = `${val}%`;
+  };
+
+  const handleSeekEnd = (e?: React.MouseEvent | React.TouchEvent | React.ChangeEvent) => {
+    if (!canControl) return;
+    isDraggingRef.current = false;
+    
+    if (videoRef.current && progressRef.current) {
+      const val = parseFloat(progressRef.current.value);
       const duration = videoRef.current.duration;
       if (isFinite(duration) && duration > 0) {
         const time = (val / 100) * duration;
         videoRef.current.currentTime = time;
         emitPartyAction('SEEK', time);
       }
-      if (progressRef.current) {
-        progressRef.current.value = val.toString();
-      }
-      if (progressFillRef.current) progressFillRef.current.style.width = `${val}%`;
-      if (progressThumbRef.current) progressThumbRef.current.style.left = `${val}%`;
     }
   };
+
+  const handleProgressMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || !videoRef.current || !tooltipRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    const clampedPos = Math.max(0, Math.min(1, pos));
+
+    tooltipRef.current.style.left = `${clampedPos * 100}%`;
+    tooltipRef.current.style.opacity = '1';
+
+    const duration = videoRef.current.duration;
+    if (isFinite(duration) && duration > 0) {
+      tooltipRef.current.textContent = formatTime(clampedPos * duration);
+    }
+  };
+
+  const handleProgressMouseLeave = () => {
+    if (tooltipRef.current) {
+      tooltipRef.current.style.opacity = '0';
+    }
+  };
+
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -551,28 +564,53 @@ export default function CustomVideoPlayer({
     setIsMuted(val === 0);
   };
 
-  const handleFastForward = () => {
+  const handleFastForward = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (videoRef.current) {
       const duration = videoRef.current.duration;
       if (isFinite(duration)) {
         const time = Math.min(videoRef.current.currentTime + 10, duration);
         videoRef.current.currentTime = time;
         emitPartyAction('SEEK', time);
+        setSeekRipple('right');
+        setTimeout(() => setSeekRipple(null), 500);
       }
     }
   };
 
-  const handleRewind = () => {
+  const handleRewind = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (videoRef.current) {
       const time = Math.max(videoRef.current.currentTime - 10, 0);
       videoRef.current.currentTime = time;
       emitPartyAction('SEEK', time);
+      setSeekRipple('left');
+      setTimeout(() => setSeekRipple(null), 500);
+    }
+  };
+
+  const handleContainerDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+    
+    // Middle 40% height, 40% width for fullscreen, sides for seek
+    const isCenter = x > width * 0.3 && x < width * 0.7 && y > height * 0.3 && y < height * 0.7;
+
+    if (x < width * 0.25) {
+      handleRewind(e);
+    } else if (x > width * 0.75) {
+      handleFastForward(e);
+    } else if (isCenter) {
+      toggleFullscreen();
     }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      
+
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
 
       switch (e.key.toLowerCase()) {
@@ -585,15 +623,15 @@ export default function CustomVideoPlayer({
         case ' ':
         case 'k':
           e.preventDefault();
-          togglePlay();
+          if (canControl) togglePlay();
           break;
         case 'arrowleft':
         case 'j':
-          handleRewind();
+          if (canControl) handleRewind();
           break;
         case 'arrowright':
         case 'l':
-          handleFastForward();
+          if (canControl) handleFastForward();
           break;
         case 'arrowup':
           e.preventDefault();
@@ -622,7 +660,7 @@ export default function CustomVideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, isFullscreen, isMuted, volume]);
+  }, [isPlaying, isFullscreen, isMuted, volume, canControl]);
 
   useEffect(() => {
     return () => {
@@ -632,7 +670,7 @@ export default function CustomVideoPlayer({
 
   const handleSubtitleChange = (globalIndex: number) => {
     setCurrentSubtitleIndex(globalIndex);
-    
+
     if (videoRef.current) {
       const tracks = videoRef.current.textTracks;
       for (let i = 0; i < tracks.length; i++) {
@@ -678,7 +716,6 @@ export default function CustomVideoPlayer({
     }
   };
 
-  const canControl = !isInParty || isHost || (partySettings?.anyoneCanControl === true);
 
   useEffect(() => {
     let controlsTimeout: NodeJS.Timeout | undefined;
@@ -735,7 +772,8 @@ export default function CustomVideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black group overflow-hidden flex flex-col justify-center"
+      className={`relative w-full h-full bg-[#050505] group overflow-hidden flex flex-col justify-center ${!showControls && isPlaying ? 'cursor-none' : ''}`}
+      onDoubleClick={handleContainerDoubleClick}
     >
       <video
         ref={videoRef}
@@ -745,14 +783,18 @@ export default function CustomVideoPlayer({
         onError={(e) => {
           const error = videoRef.current?.error;
           if (error && error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-             if (activeSourceIndex < sources.length - 1) {
-               setActiveSourceIndex(prev => prev + 1);
-             } else {
-               setHasFatalError(true);
-             }
+            if (activeSourceIndex < sources.length - 1) {
+              setActiveSourceIndex(prev => prev + 1);
+            } else {
+              setHasFatalError(true);
+            }
           }
         }}
         onPlay={() => {
+          if (!canControl && !isRemoteAction.current) {
+            videoRef.current?.pause();
+            return;
+          }
           initAudio();
           setIsPlaying(true);
           emitPartyAction('PLAY', videoRef.current?.currentTime);
@@ -762,6 +804,10 @@ export default function CustomVideoPlayer({
           }
         }}
         onPause={() => {
+          if (!canControl && !isRemoteAction.current) {
+            videoRef.current?.play().catch(() => { });
+            return;
+          }
           setIsPlaying(false);
           setIsBuffering(false);
           emitPartyAction('PAUSE');
@@ -771,22 +817,30 @@ export default function CustomVideoPlayer({
           }
         }}
         onWaiting={() => setIsBuffering(true)}
-        onPlaying={() => setIsBuffering(false)}
+        onPlaying={() => {
+          setIsBuffering(false);
+          if (canControl && !isRemoteAction.current) {
+            emitPartyAction('PLAY', videoRef.current?.currentTime);
+          }
+        }}
         onCanPlay={() => setIsBuffering(false)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
           if (!isInParty && initialTime > 0 && videoRef.current) {
-            
+
             if (!(activeSource?.isM3U8 && Hls.isSupported())) {
-               videoRef.current.currentTime = initialTime;
+              videoRef.current.currentTime = initialTime;
             }
           }
           if (pendingSyncTime.current !== null && videoRef.current) {
-             videoRef.current.currentTime = pendingSyncTime.current;
-             if (pendingSyncPlay.current) {
-               videoRef.current.play().catch(e => console.warn(e));
-             }
-             pendingSyncTime.current = null;
+            isRemoteAction.current = true;
+            videoRef.current.currentTime = pendingSyncTime.current;
+            if (pendingSyncPlay.current) {
+              videoRef.current.play().catch(e => console.warn(e));
+            }
+            pendingSyncTime.current = null;
+            if ((window as any).remoteActionTimeout) clearTimeout((window as any).remoteActionTimeout);
+            (window as any).remoteActionTimeout = setTimeout(() => { isRemoteAction.current = false; }, 3000);
           }
         }}
         onClick={() => {
@@ -794,7 +848,7 @@ export default function CustomVideoPlayer({
         }}
         playsInline
       >
-        {}
+        { }
         {/* Subtitles (Native fallback) */}
         {vttSubtitles.map((sub: any, i: number) => (
           <track
@@ -807,22 +861,36 @@ export default function CustomVideoPlayer({
         ))}
       </video>
 
-      {/* Waiting for Host Overlay */}
-      {isInParty && !isHost && !hasReceivedInitialSync && (
-        <div className="absolute inset-0 z-40 bg-black/90 flex flex-col items-center justify-center backdrop-blur-md">
-           <svg
-             className="w-12 h-12 text-accent animate-spin mb-6"
-             viewBox="0 0 24 24"
-           >
-             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-           </svg>
-           <h3 className="text-white font-bold tracking-widest uppercase text-lg mb-2">Waiting for Host</h3>
-           <p className="text-white/50 text-sm">The movie will start automatically when the host begins playback.</p>
+      {/* Seek Ripples */}
+      {seekRipple === 'left' && (
+        <div className="absolute top-1/2 left-[15%] -translate-y-1/2 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 pointer-events-none z-40 bg-black/40 rounded-full w-20 h-20 md:w-24 md:h-24 backdrop-blur-sm">
+          <MdReplay10 className="w-8 h-8 md:w-10 md:h-10 text-white" />
+          <span className="text-white font-bold text-[10px] md:text-xs mt-1">-10s</span>
+        </div>
+      )}
+      {seekRipple === 'right' && (
+        <div className="absolute top-1/2 right-[15%] -translate-y-1/2 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 pointer-events-none z-40 bg-black/40 rounded-full w-20 h-20 md:w-24 md:h-24 backdrop-blur-sm">
+          <MdForward10 className="w-8 h-8 md:w-10 md:h-10 text-white" />
+          <span className="text-white font-bold text-[10px] md:text-xs mt-1">+10s</span>
         </div>
       )}
 
-      {}
+      {/* Waiting for Host Overlay */}
+      {isInParty && !isHostPresent && (
+        <div className="absolute inset-0 z-40 bg-black/90 flex flex-col items-center justify-center backdrop-blur-md">
+          <svg
+            className="w-12 h-12 text-accent animate-spin mb-6"
+            viewBox="0 0 24 24"
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <h3 className="text-white font-bold tracking-widest uppercase text-lg mb-2">Waiting for Host</h3>
+          <p className="text-white/50 text-sm">The movie will start automatically when the host begins playback.</p>
+        </div>
+      )}
+
+      { }
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 bg-black/10">
           <svg
@@ -841,7 +909,7 @@ export default function CustomVideoPlayer({
         </div>
       )}
 
-      {}
+      { }
       <div
         className={`absolute inset-0 flex items-center justify-center pointer-events-none z-30 transition-all duration-300 ${centerIndicator ? 'opacity-100 scale-100' : 'opacity-0 scale-150'}`}
       >
@@ -853,22 +921,22 @@ export default function CustomVideoPlayer({
       </div>
 
       {/* Big Center Controls */}
-      <div 
+      <div
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center gap-6 md:gap-12 z-30 transition-all duration-300 ${showControls && !isBuffering && canControl ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
       >
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); handleRewind(); }}
           className="p-3 md:p-4 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all transform hover:scale-110 border border-white/5 shadow-xl"
         >
           <MdReplay10 className="w-8 h-8 md:w-12 md:h-12" />
         </button>
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
           className="p-4 md:p-5 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all transform hover:scale-110 border border-white/5 shadow-xl"
         >
           {isPlaying ? <MdPause className="w-10 h-10 md:w-14 md:h-14" /> : <MdPlayArrow className="w-10 h-10 md:w-14 md:h-14" />}
         </button>
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); handleFastForward(); }}
           className="p-3 md:p-4 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all transform hover:scale-110 border border-white/5 shadow-xl"
         >
@@ -877,7 +945,7 @@ export default function CustomVideoPlayer({
       </div>
 
       {/* Idle Info Screen */}
-      <div 
+      <div
         className={`absolute inset-0 bg-black/80 backdrop-blur-sm z-40 flex flex-col justify-end p-8 md:p-16 transition-all duration-700 pointer-events-none ${isIdle && !isPlaying ? 'opacity-100' : 'opacity-0'}`}
       >
         <div className="max-w-3xl flex flex-col gap-4 transform transition-all duration-700 ease-out translate-y-0 opacity-100">
@@ -886,7 +954,7 @@ export default function CustomVideoPlayer({
           ) : itemTitle ? (
             <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl mb-2">{itemTitle}</h2>
           ) : null}
-          
+
           {itemMetadata && (
             <div className="flex items-center gap-3 text-white/70 text-sm md:text-base font-medium tracking-wide">
               {itemMetadata.split('•').map((part, i) => (
@@ -897,7 +965,7 @@ export default function CustomVideoPlayer({
               ))}
             </div>
           )}
-          
+
           {itemDescription && (
             <p className="text-white/60 text-sm md:text-base line-clamp-3 leading-relaxed max-w-2xl mt-2 drop-shadow-md">
               {itemDescription}
@@ -913,12 +981,23 @@ export default function CustomVideoPlayer({
 
       {/* Bottom Controls Bar */}
       <div
-        className={`absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-all duration-500 ease-out ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#050505]/95 via-[#050505]/40 to-transparent transition-all duration-500 ease-out ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
         <div className="w-full px-4 md:px-8 pb-4 md:pb-6 flex flex-col gap-3 md:gap-4">
 
-          {}
-          <div className="relative w-full h-4 group/progress cursor-pointer flex items-center z-10">
+          { }
+          <div
+            className="relative w-full h-4 group/progress cursor-pointer flex items-center z-20"
+            onMouseMove={handleProgressMouseMove}
+            onMouseLeave={handleProgressMouseLeave}
+          >
+            <div
+              ref={tooltipRef}
+              className="absolute bottom-full mb-3 -translate-x-1/2 bg-[#050505] backdrop-blur-md text-[#EAE8E3] text-[12px] font-bold py-1.5 px-3 rounded shadow-2xl border border-white/10 pointer-events-none z-50 transition-opacity duration-150 whitespace-nowrap"
+              style={{ opacity: 0, left: '0%' }}
+            >
+              00:00
+            </div>
             <input
               ref={progressRef}
               type="range"
@@ -927,18 +1006,22 @@ export default function CustomVideoPlayer({
               step="0.1"
               defaultValue="0"
               onChange={handleSeek}
+              onMouseDown={handleSeekStart}
+              onTouchStart={handleSeekStart}
+              onMouseUp={handleSeekEnd}
+              onTouchEnd={handleSeekEnd}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
             />
-            {}
+            { }
             <div className="absolute left-0 right-0 h-1 md:h-1.5 bg-white/20 transition-all duration-300 group-hover/progress:h-1.5 md:group-hover/progress:h-2">
-              {}
+              { }
               <div
                 ref={progressFillRef}
                 className="absolute left-0 top-0 bottom-0 bg-accent pointer-events-none transition-all duration-75"
                 style={{ width: '0%' }}
               />
             </div>
-            {}
+            { }
             <div
               ref={progressThumbRef}
               className="absolute h-3.5 w-3.5 md:h-4 md:w-4 bg-accent rounded-full pointer-events-none transition-all duration-300 scale-0 group-hover/progress:scale-100 opacity-0 group-hover/progress:opacity-100 shadow-md"
@@ -946,9 +1029,9 @@ export default function CustomVideoPlayer({
             />
           </div>
 
-          {}
+          { }
           <div className="flex items-center justify-between">
-            {}
+            { }
             <div className="flex items-center gap-2 md:gap-6">
               <button onClick={togglePlay} className="text-white hover:text-white transition-transform transform hover:scale-110" title="Play/Pause">
                 {isPlaying ? <MdPause className="w-6 h-6 md:w-8 md:h-8" /> : <MdPlayArrow className="w-6 h-6 md:w-8 md:h-8" />}
@@ -960,14 +1043,18 @@ export default function CustomVideoPlayer({
                 <MdForward10 className="w-6 h-6 md:w-7 md:h-7" />
               </button>
 
-              {}
-              <div className="flex items-center gap-2 group/volume relative hidden sm:flex">
+              { }
+              <div 
+                className="flex items-center gap-2 relative hidden sm:flex"
+                onMouseEnter={() => setIsVolumeHovered(true)}
+                onMouseLeave={() => setIsVolumeHovered(false)}
+              >
                 <button onClick={toggleMute} className="text-white/90 hover:text-white transition-colors transform hover:scale-110" title="Mute/Unmute">
                   {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 md:w-6 md:h-6" /> : <Volume2 className="w-5 h-5 md:w-6 md:h-6" />}
                 </button>
-                <div className="w-0 overflow-hidden transition-all duration-300 ease-out group-hover/volume:w-24 opacity-0 group-hover/volume:opacity-100 flex items-center h-6">
-                  {}
-                  <div className="relative w-20 mx-2 h-4 flex items-center">
+                <div className={`overflow-hidden transition-all duration-300 ease-out flex items-center h-6 ${isVolumeHovered ? 'w-24 opacity-100 pl-1' : 'w-0 opacity-0'}`}>
+                  { }
+                  <div className="relative w-20 h-4 flex items-center">
                     <input
                       type="range"
                       min="0"
@@ -977,15 +1064,15 @@ export default function CustomVideoPlayer({
                       onChange={handleVolumeChange}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                     />
-                    {}
+                    { }
                     <div className="absolute left-0 right-0 h-1 md:h-1.5 bg-white/20 rounded-full">
-                      {}
+                      { }
                       <div
                         className="absolute left-0 top-0 bottom-0 bg-accent rounded-full pointer-events-none transition-all duration-75"
                         style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
                       />
                     </div>
-                    {}
+                    { }
                     <div
                       className="absolute h-3 w-3 md:h-3.5 md:w-3.5 bg-accent rounded-full pointer-events-none shadow-md transition-all duration-75"
                       style={{ left: `${(isMuted ? 0 : volume) * 100}%`, transform: 'translateX(-50%)' }}
@@ -994,20 +1081,20 @@ export default function CustomVideoPlayer({
                 </div>
               </div>
 
-              {}
+              { }
               <div className="text-white/90 text-xs md:text-sm font-medium tracking-wide">
                 {formatTime(currentTime)} <span className="text-white/50 mx-1">/</span> {formatTime(duration)}
               </div>
             </div>
 
-            {}
+            { }
             <div className="flex items-center gap-2 md:gap-6">
-              {}
+              { }
               {allSubtitles.length > 0 && (
                 <div className="relative">
-                  <button 
-                    onClick={() => { setShowSubtitlesMenu(!showSubtitlesMenu); setShowSettings(false); }} 
-                    className={`transition-all transform hover:scale-110 ${showSubtitlesMenu ? 'text-white' : currentSubtitleIndex !== -1 ? 'text-accent' : 'text-white/90 hover:text-white'}`} 
+                  <button
+                    onClick={() => { setShowSubtitlesMenu(!showSubtitlesMenu); setShowSettings(false); }}
+                    className={`transition-all transform hover:scale-110 ${showSubtitlesMenu ? 'text-white' : currentSubtitleIndex !== -1 ? 'text-accent' : 'text-white/90 hover:text-white'}`}
                     title="Captions"
                   >
                     <MdSubtitles className="w-6 h-6 md:w-7 md:h-7" />
@@ -1040,7 +1127,7 @@ export default function CustomVideoPlayer({
                 </div>
               )}
 
-              {}
+              { }
               <div className="relative">
                 <button
                   onClick={() => { setShowSettings(!showSettings); setShowSubtitlesMenu(false); }}
@@ -1052,7 +1139,7 @@ export default function CustomVideoPlayer({
 
                 {showSettings && (
                   <div className="absolute bottom-full right-0 mb-6 w-60 bg-[rgba(20,20,20,0.9)] backdrop-blur-xl rounded-md overflow-hidden shadow-2xl flex flex-col origin-bottom-right animate-in fade-in duration-200 z-50">
-                    
+
                     {settingsView === 'main' && (
                       <div className="flex flex-col py-2 max-h-[40vh] overflow-y-auto custom-scrollbar">
                         <div className="px-4 py-1.5 mt-1 shrink-0">
@@ -1083,7 +1170,7 @@ export default function CustomVideoPlayer({
                           <span>Speed</span>
                           <span className="text-white/50 text-xs">{playbackRate}x &gt;</span>
                         </button>
-                        
+
                         {sources.some((s) => s.audioType === 'sub') && sources.some((s) => s.audioType === 'dub') && (
                           <button
                             onClick={() => setSettingsView('audioType')}
@@ -1093,7 +1180,7 @@ export default function CustomVideoPlayer({
                             <span className="text-white/50 text-xs truncate max-w-[100px]">{sources[activeSourceIndex]?.audioType === 'dub' ? 'Dub' : 'Sub'} &gt;</span>
                           </button>
                         )}
-                        
+
                         {audioTracks.length > 1 && (
                           <button
                             onClick={() => setSettingsView('audio')}

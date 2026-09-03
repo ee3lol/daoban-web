@@ -24,8 +24,8 @@ export const getUserPreferences = cache(async () => {
     .where(eq(userPreferences.userId, session.user.id))
     .limit(1);
 
-    if (prefs.length === 0) {
-    
+  if (prefs.length === 0) {
+
     return {
       accentColor: '#fc535a',
       themeStyle: 'dark',

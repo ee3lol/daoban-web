@@ -58,9 +58,16 @@ app.prepare().then(() => {
     mediaTitle?: string;
     userLimit: number;
     password?: string;
-    users: Map<string, { name: string, image?: string }>; // userId -> user info
+    mediaSeason?: number;
+    mediaEpisode?: number;
+    users: Map<string, { name: string, image?: string, role: "host" | "dj" | "guest" }>; // userId -> user info
     settings: { anyoneCanControl: boolean };
     messages: any[];
+    playbackState: {
+      isPlaying: boolean;
+      time: number;
+      updatedAt: number;
+    };
   }
   const watchParties = new Map<string, WatchParty>();
   const socketToParty = new Map<string, { partyId: string, userId: string }>();
@@ -74,6 +81,15 @@ app.prepare().then(() => {
     }
     console.log("Broadcasting presence sync:", presenceState);
     io.emit("presence_sync", presenceState);
+  }
+
+  function broadcastSystemMessage(partyId: string, text: string) {
+    const party = watchParties.get(partyId);
+    if (!party) return;
+    const msg = { id: "sys_" + Math.random().toString(36).substring(2, 9), userId: "system", userName: "System", text, timestamp: Date.now() };
+    party.messages.push(msg);
+    if (party.messages.length > 50) party.messages.shift();
+    io.to(`party_${partyId}`).emit("party_chat_message", msg);
   }
 
   io.on("connection", (socket) => {
@@ -124,19 +140,26 @@ app.prepare().then(() => {
     // --- Watch Party System ---
     socket.on("create_party", (details, callback) => {
       const partyId = Math.random().toString(36).substring(2, 9);
-      const users = new Map<string, { name: string, image?: string }>();
-      users.set(details.hostId, { name: details.hostName || "Host", image: details.userImage });
+      const users = new Map<string, { name: string, image?: string, role: "host" | "dj" | "guest" }>();
+      users.set(details.hostId, { name: details.hostName || "Host", image: details.userImage, role: "host" });
       watchParties.set(partyId, {
         id: partyId,
         hostId: details.hostId,
         mediaId: details.mediaId,
         mediaType: details.mediaType,
         mediaTitle: details.mediaTitle,
+        mediaSeason: details.mediaSeason,
+        mediaEpisode: details.mediaEpisode,
         userLimit: details.userLimit,
         password: details.password,
         users,
         settings: { anyoneCanControl: false },
-        messages: []
+        messages: [],
+        playbackState: {
+          isPlaying: false,
+          time: 0,
+          updatedAt: Date.now()
+        }
       });
       socketToParty.set(socket.id, { partyId, userId: details.hostId });
       socket.join(`party_${partyId}`);
@@ -146,22 +169,22 @@ app.prepare().then(() => {
     socket.on("join_party", (data, callback) => {
       const { partyId, userId, userName, userImage, password } = data;
       const party = watchParties.get(partyId);
-      
+
       if (!party) return callback && callback({ success: false, error: "Party not found" });
       if (party.password && party.password !== password) return callback && callback({ success: false, error: "Invalid password" });
       if (party.users.size >= party.userLimit && !party.users.has(userId)) return callback && callback({ success: false, error: "Party is full" });
 
-      party.users.set(userId, { name: userName || "Guest", image: userImage });
+      party.users.set(userId, { name: userName || "Guest", image: userImage, role: "guest" });
       socketToParty.set(socket.id, { partyId, userId });
       socket.join(`party_${partyId}`);
-      
-      const membersList = Array.from(party.users.entries()).map(([id, data]) => ({ id, name: data.name, image: data.image }));
-      
+
+      const membersList = Array.from(party.users.entries()).map(([id, data]) => ({ id, name: data.name, image: data.image, role: data.role }));
+
       // Notify others in room with name
       socket.broadcast.to(`party_${partyId}`).emit("party_user_joined", { userId, userName: userName || "Guest" });
       // Update members for everyone
       io.to(`party_${partyId}`).emit("party_members_update", { members: membersList });
-      
+
       if (callback) callback({
         success: true,
         hostId: party.hostId,
@@ -183,7 +206,7 @@ app.prepare().then(() => {
     socket.on("kick_from_party", (data) => {
       const party = watchParties.get(data.partyId);
       if (!party || party.hostId !== data.hostId) return; // only host can kick
-      
+
       // Find and disconnect the kicked user's socket
       for (const [sid, info] of socketToParty.entries()) {
         if (info.partyId === data.partyId && info.userId === data.kickUserId) {
@@ -203,7 +226,7 @@ app.prepare().then(() => {
     socket.on("end_party", (data) => {
       const party = watchParties.get(data.partyId);
       if (!party || party.hostId !== data.hostId) return;
-      
+
       io.to(`party_${data.partyId}`).emit("party_ended", { reason: "The host ended the party." });
       // Clean up all sockets in this party
       for (const [sid, info] of socketToParty.entries()) {
@@ -264,38 +287,102 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on("party_action", (data) => {
+    function canControl(party: WatchParty, userId: string) {
+      if (party.settings.anyoneCanControl) return true;
+      const user = party.users.get(userId);
+      return user?.role === "host" || user?.role === "dj";
+    }
+
+    function getAccuratePlaybackState(party: WatchParty) {
+      if (!party.playbackState.isPlaying) return party.playbackState;
+      const elapsed = (Date.now() - party.playbackState.updatedAt) / 1000;
+      return {
+        isPlaying: true,
+        time: party.playbackState.time + elapsed,
+        updatedAt: Date.now()
+      };
+    }
+
+
+    socket.on("party_play", (data) => {
       const party = watchParties.get(data.partyId);
-      if (!party) return;
-      
-      // Enforce permissions: if not host and anyoneCanControl is false, block action
-      if (!party.settings.anyoneCanControl && data.emitterId !== party.hostId) {
-        return;
-      }
-      
-      // data: { partyId, type: 'PLAY' | 'PAUSE' | 'SEEK', time?: number, emitterId: string }
-      // Broadcast to everyone else in the room
-      socket.broadcast.to(`party_${data.partyId}`).emit("party_action", data);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || !canControl(party, info.userId)) return;
+
+      party.playbackState = { isPlaying: true, time: data.time, updatedAt: Date.now() };
+      const userName = party.users.get(info.userId)?.name || "Someone";
+      io.to(`party_${data.partyId}`).emit("party_state_update", party.playbackState);
+      broadcastSystemMessage(data.partyId, `${userName} played the video.`);
+    });
+
+    socket.on("party_pause", (data) => {
+      const party = watchParties.get(data.partyId);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || !canControl(party, info.userId)) return;
+
+      party.playbackState = { isPlaying: false, time: data.time, updatedAt: Date.now() };
+      const userName = party.users.get(info.userId)?.name || "Someone";
+      io.to(`party_${data.partyId}`).emit("party_state_update", party.playbackState);
+      broadcastSystemMessage(data.partyId, `${userName} paused the video.`);
+    });
+
+    socket.on("party_seek", (data) => {
+      const party = watchParties.get(data.partyId);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || !canControl(party, info.userId)) return;
+
+      party.playbackState.time = data.time;
+      party.playbackState.updatedAt = Date.now();
+      const userName = party.users.get(info.userId)?.name || "Someone";
+      io.to(`party_${data.partyId}`).emit("party_state_update", party.playbackState);
+      broadcastSystemMessage(data.partyId, `${userName} jumped to ${Math.floor(data.time / 60)}:${Math.floor(data.time % 60).toString().padStart(2, '0')}.`);
+    });
+
+    socket.on("request_party_state", (partyId) => {
+      const party = watchParties.get(partyId);
+      if (party) socket.emit("party_state_update", getAccuratePlaybackState(party));
     });
 
     socket.on("party_change_media", (data) => {
-      // data: { partyId, season, episode }
-      socket.broadcast.to(`party_${data.partyId}`).emit("party_change_media", data);
+      const party = watchParties.get(data.partyId);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || !canControl(party, info.userId)) return;
+
+      party.mediaSeason = data.season;
+      party.mediaEpisode = data.episode;
+      const userName = party.users.get(info.userId)?.name || "Someone";
+      io.to(`party_${data.partyId}`).emit("party_change_media", { season: data.season, episode: data.episode });
+      broadcastSystemMessage(data.partyId, `${userName} changed the episode to S${data.season || '?'} E${data.episode || '?'}.`);
     });
 
-    socket.on("request_sync", (data) => {
-      // data: { partyId }
-      socket.broadcast.to(`party_${data.partyId}`).emit("request_sync", { targetSocketId: socket.id });
+    socket.on("grant_dj", (data) => {
+      const party = watchParties.get(data.partyId);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || party.hostId !== info.userId) return;
+
+      const targetUser = party.users.get(data.targetId);
+      if (targetUser && targetUser.role === "guest") {
+        targetUser.role = "dj";
+        io.to(`party_${data.partyId}`).emit("party_members_update", {
+          members: Array.from(party.users.entries()).map(([id, u]) => ({ id, name: u.name, image: u.image, role: u.role }))
+        });
+        broadcastSystemMessage(data.partyId, `${targetUser.name} was promoted to DJ.`);
+      }
     });
 
-    socket.on("sync_state", (data) => {
-      // data: { targetSocketId, time, isPlaying, season, episode }
-      io.to(data.targetSocketId).emit("sync_state", data);
-    });
+    socket.on("revoke_dj", (data) => {
+      const party = watchParties.get(data.partyId);
+      const info = socketToParty.get(socket.id);
+      if (!party || !info || party.hostId !== info.userId) return;
 
-    socket.on("party_sync_update", (data) => {
-      // data: { partyId, time, isPlaying } - emitted periodically by host
-      socket.broadcast.to(`party_${data.partyId}`).emit("party_sync_update", data);
+      const targetUser = party.users.get(data.targetId);
+      if (targetUser && targetUser.role === "dj") {
+        targetUser.role = "guest";
+        io.to(`party_${data.partyId}`).emit("party_members_update", {
+          members: Array.from(party.users.entries()).map(([id, u]) => ({ id, name: u.name, image: u.image, role: u.role }))
+        });
+        broadcastSystemMessage(data.partyId, `${targetUser.name} is no longer a DJ.`);
+      }
     });
 
     socket.on("leave_party", () => {
@@ -312,7 +399,7 @@ app.prepare().then(() => {
             members: Array.from(party.users.entries()).map(([id, data]) => ({ id, name: data.name, image: data.image }))
           });
           socket.leave(`party_${partyId}`);
-          
+
           if (party.users.size === 0) {
             watchParties.delete(partyId);
           }
@@ -338,7 +425,7 @@ app.prepare().then(() => {
           io.to(`party_${partyId}`).emit("party_members_update", {
             members: Array.from(party.users.entries()).map(([id, data]) => ({ id, name: data.name, image: data.image }))
           });
-          
+
           if (party.users.size === 0) {
             watchParties.delete(partyId);
           }

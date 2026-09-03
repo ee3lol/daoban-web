@@ -20,7 +20,7 @@ interface PartyChatProps {
   userName: string;
   userImage?: string | null;
   hostId?: string | null;
-  members?: { id: string; name: string, image?: string }[];
+  members?: { id: string; name: string, image?: string, role?: string }[];
   partySettings?: { anyoneCanControl: boolean };
   initialMessages?: ChatMessage[];
 }
@@ -147,6 +147,24 @@ export default function PartyChat({ partyId, userId, userName, userImage, hostId
     socket.emit("end_party", { partyId, hostId: userId });
   };
 
+  const handleToggleDJ = (targetId: string, currentRole?: string) => {
+    if (!socket || !isHost) return;
+    if (currentRole === "dj") {
+      socket.emit("revoke_dj", { partyId, targetId });
+    } else {
+      socket.emit("grant_dj", { partyId, targetId });
+    }
+  };
+
+  const handleLeaveParty = () => {
+    if (!socket) return;
+    socket.emit("leave_party");
+    // Redirect to the current URL without the party parameter
+    const url = new URL(window.location.href);
+    url.searchParams.delete("party");
+    window.location.href = url.toString();
+  };
+
   return (
     <div className="flex flex-col w-full h-full bg-background-elevated/90 overflow-hidden">
       {/* Header with tabs */}
@@ -268,22 +286,36 @@ export default function PartyChat({ partyId, userId, userName, userImage, hostId
                   <span className="text-white text-sm font-medium truncate flex items-center gap-2">
                     {member.name}
                     {member.id === hostId && (
-                      <Crown className="w-4 h-4 text-yellow-400 shrink-0" />
+                      <span title="Host">
+                        <Crown className="w-4 h-4 text-yellow-400 shrink-0" />
+                      </span>
+                    )}
+                    {member.role === "dj" && member.id !== hostId && (
+                      <span className="text-[9px] font-bold tracking-widest uppercase bg-accent/20 text-accent px-2 py-0.5 rounded-full border border-accent/30">DJ</span>
                     )}
                     {member.id === userId && (
                       <span className="text-[9px] text-white/30 tracking-wider uppercase">(you)</span>
                     )}
                   </span>
                 </div>
-                {/* Host can kick others */}
+                
                 {isHost && member.id !== userId && (
-                  <button
-                    onClick={() => handleKick(member.id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                    title="Kick from party"
-                  >
-                    <UserX className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => handleToggleDJ(member.id, member.role)}
+                      className={`p-2 rounded-lg transition-all text-xs font-bold ${member.role === 'dj' ? 'text-accent hover:bg-accent/10' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+                      title={member.role === 'dj' ? "Revoke DJ" : "Make DJ"}
+                    >
+                      DJ
+                    </button>
+                    <button
+                      onClick={() => handleKick(member.id)}
+                      className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                      title="Kick from party"
+                    >
+                      <UserX className="w-5 h-5" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -317,6 +349,19 @@ export default function PartyChat({ partyId, userId, userName, userImage, hostId
               >
                 <XCircle className="w-4 h-4" />
                 End Party
+              </button>
+            </div>
+          )}
+          
+          {!isHost && (
+            <div className="p-4 border-t border-white/5 shrink-0">
+              <button
+                onClick={handleLeaveParty}
+                className="group relative w-full flex items-center justify-center gap-2 py-4 bg-red-500 text-white rounded-xl text-xs font-black tracking-widest uppercase overflow-hidden shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-all duration-300 animate-pulse hover:animate-none transform hover:scale-[1.02]"
+              >
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                <UserX className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Leave Party</span>
               </button>
             </div>
           )}
