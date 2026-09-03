@@ -163,12 +163,46 @@ export const watchHistory = pgTable('watch_history', {
   title: text('title').notNull(),
   posterPath: text('poster_path'),
   backdropPath: text('backdrop_path'),
+  isCompleted: boolean('is_completed').notNull().default(false),
+  watchCount: integer('watch_count').notNull().default(1),
+  genres: text('genres').array().default([]).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const watchHistoryRelations = relations(watchHistory, ({ one }) => ({
   user: one(user, {
     fields: [watchHistory.userId],
+    references: [user.id],
+  }),
+}));
+
+export const userStats = pgTable('user_stats', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+  totalWatchTime: integer('total_watch_time').notNull().default(0), // Total minutes watched
+  topGenres: text('top_genres').array().default([]).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const userStatsRelations = relations(userStats, ({ one }) => ({
+  user: one(user, {
+    fields: [userStats.userId],
+    references: [user.id],
+  }),
+}));
+
+export const searchHistory = pgTable('search_history', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  query: text('query').notNull(),
+  clickedMediaId: integer('clicked_media_id'),
+  clickedMediaType: text('clicked_media_type'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const searchHistoryRelations = relations(searchHistory, ({ one }) => ({
+  user: one(user, {
+    fields: [searchHistory.userId],
     references: [user.id],
   }),
 }));

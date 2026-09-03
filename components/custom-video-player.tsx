@@ -257,6 +257,24 @@ export default function CustomVideoPlayer({
     return "Source";
   };
 
+  const getAudioTrackLabel = (track: any, index: number) => {
+    if (!track) return `Audio Track ${index + 1}`;
+    const langCode = track.lang || track.language;
+    if (langCode) {
+      try {
+        const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+        const name = displayNames.of(langCode);
+        if (name && name !== langCode) {
+          return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+        return langCode.charAt(0).toUpperCase() + langCode.slice(1);
+      } catch (e) {
+        return langCode.charAt(0).toUpperCase() + langCode.slice(1);
+      }
+    }
+    return track.name || `Audio Track ${index + 1}`;
+  };
+
   const uniqueQualities = useMemo(() => {
     const unique: any[] = [];
     const seen = new Set();
@@ -1187,7 +1205,7 @@ export default function CustomVideoPlayer({
                             className="flex items-center justify-between px-4 py-2.5 text-sm transition-all hover:bg-white/10 text-white/90"
                           >
                             <span>Audio</span>
-                            <span className="text-white/50 text-xs truncate max-w-[100px]">{audioTracks[currentAudioTrack]?.name || `Track ${currentAudioTrack + 1}`} &gt;</span>
+                            <span className="text-white/50 text-xs truncate max-w-[100px]">{getAudioTrackLabel(audioTracks[currentAudioTrack], currentAudioTrack)} &gt;</span>
                           </button>
                         )}
                       </div>
@@ -1255,7 +1273,7 @@ export default function CustomVideoPlayer({
                               onClick={() => { handleAudioTrackChange(i); setShowSettings(false); setSettingsView('main'); }}
                               className={`text-left px-6 py-2.5 text-sm transition-all hover:bg-white/10 ${currentAudioTrack === i ? 'text-accent bg-white/10 font-bold' : 'text-white/70'}`}
                             >
-                              {track.name || `Audio Track ${i + 1}`}
+                              {getAudioTrackLabel(track, i)}
                             </button>
                           ))}
                         </div>
