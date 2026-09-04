@@ -47,7 +47,7 @@ interface CustomVideoPlayerProps {
   userId?: string;
 }
 
-const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true }: any) => {
+const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true, poster }: any) => {
   const {
     videoRef, containerRef, hlsRef,
     sources, activeSourceIndex, setActiveSourceIndex, backendAudioTrack,
@@ -292,11 +292,20 @@ const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true
           }
         }
       });
-    } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      const streamUrl = activeSource.url;
+      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        const streamUrl = activeSource.url;
 
-      videoRef.current.src = streamUrl;
-      if (autoPlay) safePlay();
+        videoRef.current.src = streamUrl;
+        videoRef.current.onerror = (e) => {
+          console.warn("Native HLS video error, attempting to recover...", e);
+          if (activeSourceIndex < sources.length - 1) {
+            setServerFailed(true);
+            setCountdown(5);
+          } else {
+            setHasFatalError(true);
+          }
+        };
+        if (autoPlay) safePlay();
     } else if (activeSource.isMP4) {
       videoRef.current.src = activeSource.url;
 
@@ -426,6 +435,7 @@ const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true
         ref={videoRef}
         className="w-full h-full object-contain bg-black"
         playsInline
+        poster={poster}
         onError={(e) => {
           const error = videoRef.current?.error;
           if (error && error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
