@@ -431,6 +431,7 @@ export default function WatchPlayer({ item, type, defaultSeason, defaultEpisode 
               <div className="flex flex-col items-center gap-4 text-white/50">
                 <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs uppercase tracking-widest font-bold">Loading Streams...</span>
+                <span className="text-[11px] text-white/30 tracking-wider">This may take some time as we find the best quality</span>
               </div>
             </div>
           ) : (

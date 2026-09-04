@@ -210,6 +210,19 @@ export default function CustomVideoPlayer({
   const [isBuffering, setIsBuffering] = useState(false);
   const [currentSubtitleIndex, setCurrentSubtitleIndex] = useState(-1);
   const [hasFatalError, setHasFatalError] = useState(false);
+  const [serverFailed, setServerFailed] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (serverFailed && countdown > 0) {
+      timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+    } else if (serverFailed && countdown === 0) {
+      setServerFailed(false);
+      setActiveSourceIndex(prev => prev + 1);
+    }
+    return () => clearTimeout(timer);
+  }, [serverFailed, countdown]);
 
   useEffect(() => {
     setActiveSourceIndex(0);
@@ -381,8 +394,8 @@ export default function CustomVideoPlayer({
               console.warn("HLS Network Error, attempting to recover...", data);
 
               if (activeSourceIndex < sources.length - 1) {
-                console.log(`Failing over to source index ${activeSourceIndex + 1}`);
-                setActiveSourceIndex(activeSourceIndex + 1);
+                setServerFailed(true);
+                setCountdown(5);
               } else {
                 hls.startLoad();
               }
@@ -394,8 +407,8 @@ export default function CustomVideoPlayer({
             default:
               console.warn("HLS Fatal Error, destroying player.", data);
               if (activeSourceIndex < sources.length - 1) {
-                console.log(`Failing over to source index ${activeSourceIndex + 1}`);
-                setActiveSourceIndex(activeSourceIndex + 1);
+                setServerFailed(true);
+                setCountdown(5);
               } else {
                 hls.destroy();
                 setHasFatalError(true);
@@ -419,8 +432,8 @@ export default function CustomVideoPlayer({
       videoRef.current.onerror = (e) => {
         console.warn("Native video error, attempting to recover...", e);
         if (activeSourceIndex < sources.length - 1) {
-          console.log(`Failing over to source index ${activeSourceIndex + 1}`);
-          setActiveSourceIndex(activeSourceIndex + 1);
+          setServerFailed(true);
+          setCountdown(5);
         } else {
           setHasFatalError(true);
         }
@@ -790,9 +803,30 @@ export default function CustomVideoPlayer({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full bg-[#050505] group overflow-hidden flex flex-col justify-center ${!showControls && isPlaying ? 'cursor-none' : ''}`}
+      className={`relative w-full h-full bg-[#050505] group overflow-hidden flex flex-col justify-center ${!showControls && isPlaying && !serverFailed ? 'cursor-none' : ''}`}
       onDoubleClick={handleContainerDoubleClick}
     >
+      {serverFailed && (
+        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+          <div className="text-center flex flex-col gap-2">
+            <h3 className="text-xl font-bold text-white tracking-widest uppercase text-red-500">Unable to play</h3>
+            <p className="text-white/70 text-sm">This server seems to be unreachable.</p>
+          </div>
+          <button
+            onClick={() => {
+              setServerFailed(false);
+              setActiveSourceIndex(prev => prev + 1);
+            }}
+            className="px-6 py-3 bg-white hover:bg-white/90 text-black font-bold rounded-full transition-all flex items-center gap-2"
+          >
+            <span>Change Server</span>
+          </button>
+          <div className="text-white/50 text-xs">
+            Auto-changing in {countdown}s...
+          </div>
+        </div>
+      )}
+
       <video
         ref={videoRef}
         poster={poster}
