@@ -54,7 +54,7 @@ const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true
     setQualities, setAudioTracks, setCurrentAudioTrack, setHlsSubtitles, setCurrentQualityIndex, setCurrentSubtitleIndex,
     isPlaying, setIsPlaying, currentTime, setCurrentTime, duration, setDuration,
     setIsBuffering, volume, setVolume, isMuted, setIsMuted, playbackRate,
-    socket, partyId, isInParty, isHost, hasReceivedInitialSync, setHasReceivedInitialSync
+    socket, partyId, isInParty, isHost, hasReceivedInitialSync, setHasReceivedInitialSync, setIsFullscreen
   } = usePlayer();
 
   const activeSource = sources[activeSourceIndex];
@@ -326,7 +326,33 @@ const PlayerInner = ({ autoPlay, initialTime, onProgress, canControlParty = true
     };
   }, [activeSource, autoPlay]);
 
-  useEffect(() => {
+    useEffect(() => {
+      const handleFullscreenChange = () => {
+        setIsFullscreen(
+          !!document.fullscreenElement || 
+          !!(document as any).webkitFullscreenElement ||
+          !!(videoRef.current as any)?.webkitDisplayingFullscreen
+        );
+      };
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (videoRef.current) {
+        videoRef.current.addEventListener('webkitendfullscreen', handleFullscreenChange);
+        videoRef.current.addEventListener('webkitbeginfullscreen', handleFullscreenChange);
+      }
+
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('webkitendfullscreen', handleFullscreenChange);
+          videoRef.current.removeEventListener('webkitbeginfullscreen', handleFullscreenChange);
+        }
+      };
+    }, [setIsFullscreen, videoRef]);
+
+    useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
 

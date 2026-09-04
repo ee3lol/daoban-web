@@ -64,6 +64,11 @@ export const PlayerControls = () => {
   };
 
   const toggleFullscreen = () => {
+    if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
+      (videoRef.current as any).webkitEnterFullscreen();
+      return;
+    }
+
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen().catch(err => {
         console.error(`Error attempting to enable fullscreen: ${err.message}`);

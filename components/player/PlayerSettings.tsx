@@ -158,7 +158,7 @@ export const PlayerSettings = () => {
   // UI Render
   return (
     <div
-      className="absolute bottom-full right-0 mb-4 md:mb-6 w-full md:w-80 bg-[rgba(25,25,25,0.9)] md:bg-[rgba(25,25,25,0.6)] backdrop-blur-3xl border-t md:border border-white/10 md:rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col origin-bottom-right animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 duration-300 z-50 fixed md:absolute bottom-0 left-0 right-0 md:left-auto max-h-[80vh] md:max-h-none rounded-t-2xl"
+      className="absolute bottom-16 right-4 mb-4 md:mb-6 w-[calc(100%-2rem)] md:w-80 bg-[rgba(25,25,25,0.95)] md:bg-[rgba(25,25,25,0.8)] backdrop-blur-3xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col origin-bottom-right animate-in fade-in slide-in-from-bottom-4 duration-300 z-50 max-h-[75vh]"
       onClick={(e) => e.stopPropagation()}
     >
       {settingsView === 'main' && (
